@@ -1,11 +1,12 @@
 (require '[clojure.core.reducers :as r]
          '[clojure.string :as str])
 
+(import java.util.BitSet
+        java.util.stream.IntStream
+        java.util.function.IntConsumer)
+
 (def directions {\^ [0 -1], \v [0 1], \< [-1 0], \> [1 0]})
 (def turn-right {[0 -1] [1 0], [1 0] [0 1], [0 1] [-1 0], [-1 0] [0 -1]})
-
-(defn create-bitset [size]
-  (java.util.BitSet. size))
 
 (defn pos->index [{:keys [width]} [x y]]
   (+ x (* y width)))
@@ -185,7 +186,7 @@
   (let [initial-state (-> (parse-input input)
                           (update :grid #(add-obstruction % pos)))
         {:keys [height width]} initial-state
-        ^java.util.BitSet seen-states (create-bitset (* height width 4))
+        ^java.util.BitSet seen-states (BitSet. (* height width 4))
         initial-key (pos-dir->index initial-state (:pos initial-state) (:dir initial-state))]
 
     (.set seen-states initial-key)
@@ -217,21 +218,6 @@
                      (inc collision-count)
                      collision-count))))))))
 
-(defn process-position [input counter results positions]
-  (fn [acc pos]
-    (let [curr (swap! counter inc)]
-      (when (zero? (mod curr 100))
-        (print (format "\u001B[2A\rProgress: %.1f%% (%d/%d)\nFound: %d valid positions\n"
-                       (* 100.0 (/ curr (count positions)))
-                       curr (count positions)
-                       (inc (count @results))))
-        (flush))
-      (if (simulate-with-obstruction input pos)
-        (do
-          (swap! results conj pos)
-          (conj acc pos))
-        acc))))
-
 (defn combine-results
   ([] #{})
   ([s1 s2] (into s1 s2)))
@@ -240,12 +226,12 @@
   (let [initial-state (parse-input input)
         {:keys [grid height width]} initial-state
         grid-size (* height width)
-        row-obstacles (create-bitset height)
-        col-obstacles (create-bitset width)]
+        row-obstacles (BitSet. height)
+        col-obstacles (BitSet. width)]
 
-    (.. (java.util.stream.IntStream/range 0 height)
+    (.. (IntStream/range 0 height)
         (parallel)
-        (forEach (reify java.util.function.IntConsumer
+        (forEach (reify IntConsumer
                    (accept [_ y]
                      (dotimes [x width]
                        (when (= \# (get-in grid [y x]))
@@ -253,20 +239,20 @@
                          (.set col-obstacles x)))))))
 
     (loop [state initial-state
-           visited (create-bitset grid-size)
+           visited (BitSet. grid-size)
            seen-states #{[(:pos initial-state) (:dir initial-state)]}]
       (let [new-state (move state)
             new-key [(:pos new-state) (:dir new-state)]
             curr-index (pos->index state (:pos new-state))]
         (cond
           (or (:leaving new-state) (seen-states new-key))
-          (let [result (create-bitset grid-size)
+          (let [result (BitSet. grid-size)
                 grid-ref (volatile! grid)
                 initial-pos-ref (volatile! (:pos initial-state))]
-            (.. (java.util.stream.IntStream/range 0 grid-size)
+            (.. (IntStream/range 0 grid-size)
                 (parallel)
                 (forEach
-                 (reify java.util.function.IntConsumer
+                 (reify IntConsumer
                    (accept [_ i]
                      (let [[x y] (index->pos state i)]
                        (when (and (.get visited i)
@@ -291,7 +277,7 @@
 
 (defn process-batch [input positions batch-size]
   (let [size (count positions)
-        results (java.util.BitSet. size)
+        results (BitSet. size)
         pos-array (object-array size)]
 
     (dotimes [i size]
