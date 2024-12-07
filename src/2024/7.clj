@@ -51,13 +51,12 @@
         (recur (+ sum value))
         sum))))
 
-(time
- (let [data (->> (slurp "inputs/2024/7.txt")
-                 str/split-lines
-                 (map #(let [[n rest] (str/split % #":\s+")
-                             target (parse-long n)
-                             exprs (map parse-long (str/split rest #"\s+"))]
-                         [target exprs])))]
+(let [data (->> (slurp "inputs/2024/7.txt")
+                str/split-lines
+                (map #(let [[n rest] (str/split % #":\s+")
+                            target (parse-long n)
+                            exprs (map parse-long (str/split rest #"\s+"))]
+                        [target exprs])))]
 
-   [(parallel-solve data [\+ \*])
-    (parallel-solve data [\+ \* \|])]))
+  [(time (parallel-solve data [\+ \*]))
+   (time (parallel-solve data [\+ \* \|]))])
