@@ -43,5 +43,5 @@
        (filter identity)
        count))
 
-(let [data (str/split-lines (slurp "4.txt"))]
+(let [data (str/split-lines (slurp "inputs/2024/4.txt"))]
   [(count-xmas data) (count-x-mas data)])

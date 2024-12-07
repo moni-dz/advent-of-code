@@ -35,7 +35,7 @@
   (nth nums (quot (count nums) 2)))
 
 (def input
-  (let [[order produce] (-> (slurp "5.txt")
+  (let [[order produce] (-> (slurp "inputs/2024/5.txt")
                             (str/split #"\n\n")
                             ((fn [[a b]]
                                [(map #(str/split % #"\|") (str/split a #"\n"))

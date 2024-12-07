@@ -20,7 +20,7 @@
                  enabled?))
         total))))
 
-(let [data (slurp "3.txt")]
+(let [data (slurp "inputs/2024/3.txt")]
   [(process-muls data) (process-instructions data)])
 
 

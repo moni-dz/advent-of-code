@@ -348,7 +348,7 @@
       (print "\u001B[?25h")
       final-results)))
 
-(let [input (slurp "6.txt")]
+(let [input (slurp "inputs/2024/6.txt")]
   (print "Choose part (1/2): ")
   (flush)
   (case (read-line)

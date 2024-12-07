@@ -1,6 +1,12 @@
-.clj-kondo/
+.cpcache/
 .lsp/
-.devenv/
-.direnv/
+/target
+pom.xml
+pom.xml.asc
+*.log
+*.lein-*
 *.txt
-.idea/
+.direnv/
+.devenv/
+/inputs
+.clj-kondo/

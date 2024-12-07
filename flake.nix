@@ -12,7 +12,9 @@
 
       perSystem = { lib, pkgs, ... }: {
         devenv.shells.default = {
+          packages = [ pkgs.hyperfine ];
           languages.clojure.enable = true;
+          languages.java.jdk.package = pkgs.graalvm-ce;
         };
       };
     };

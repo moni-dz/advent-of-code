@@ -14,7 +14,7 @@
               (concat (take i nums) (drop (inc i) nums))))))
 
 (let
- [data (->> (slurp "2.txt")
+ [data (->> (slurp "inputs/2024/2.txt")
             str/split-lines
-            (mapv #(mapv parse-long (str/split % #"\s+"))))
-  [(count (filter valid-seq? data)) (count (filter with-removal? data))]]) ; [526 566]
+            (mapv #(mapv parse-long (str/split % #"\s+"))))]
+  [(count (filter valid-seq? data)) (count (filter with-removal? data))]) ; [526 566]
