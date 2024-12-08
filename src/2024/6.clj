@@ -1,9 +1,4 @@
-(require '[clojure.core.reducers :as r]
-         '[clojure.string :as str])
-
-(import java.util.BitSet
-        java.util.stream.IntStream
-        java.util.function.IntConsumer)
+(require '[clojure.string :as str])
 
 (def directions {\^ [0 -1], \v [0 1], \< [-1 0], \> [1 0]})
 (def turn-right {[0 -1] [1 0], [1 0] [0 1], [0 1] [-1 0], [-1 0] [0 -1]})
@@ -182,176 +177,46 @@
 (defn add-obstruction [grid [x y]]
   (update grid y #(str (subs % 0 x) "#" (subs % (inc x)))))
 
-(defn simulate-with-obstruction [input pos]
-  (let [initial-state (-> (parse-input input)
-                          (update :grid #(add-obstruction % pos)))
-        {:keys [height width]} initial-state
-        ^java.util.BitSet seen-states (BitSet. (* height width 4))
-        initial-key (pos-dir->index initial-state (:pos initial-state) (:dir initial-state))]
-
-    (.set seen-states initial-key)
-
-    (loop [state initial-state
-           prev-dir (:dir initial-state)
-           steps 0
-           collision-count 0]
-      (let [new-state (move state)
-            new-dir (:dir new-state)
-            hit-obstacle? (not= prev-dir new-dir)
-            state-index (pos-dir->index initial-state (:pos new-state) new-dir)]
-        (cond
-          (:leaving new-state) false
-          (>= steps 10000) false
-
-          (and hit-obstacle?
-               (.get seen-states state-index)
-               (pos? collision-count))
-          true
-
-          :else
-          (do
-            (.set seen-states state-index)
-            (recur new-state
-                   new-dir
-                   (inc steps)
-                   (if hit-obstacle?
-                     (inc collision-count)
-                     collision-count))))))))
-
-(defn combine-results
-  ([] #{})
-  ([s1 s2] (into s1 s2)))
-
 (defn get-visited-positions [input]
-  (let [initial-state (parse-input input)
-        {:keys [grid height width]} initial-state
-        grid-size (* height width)
-        row-obstacles (BitSet. height)
-        col-obstacles (BitSet. width)]
-
-    (.. (IntStream/range 0 height)
-        (parallel)
-        (forEach (reify IntConsumer
-                   (accept [_ y]
-                     (dotimes [x width]
-                       (when (= \# (get-in grid [y x]))
-                         (.set row-obstacles y)
-                         (.set col-obstacles x)))))))
-
+  (let [initial-state (parse-input input)]
     (loop [state initial-state
-           visited (BitSet. grid-size)
-           seen-states #{[(:pos initial-state) (:dir initial-state)]}]
+           visited #{}
+           seen #{[(:pos initial-state) (:dir initial-state)]}]
       (let [new-state (move state)
-            new-key [(:pos new-state) (:dir new-state)]
-            curr-index (pos->index state (:pos new-state))]
+            new-key [(:pos new-state) (:dir new-state)]]
+        (if (or (:leaving new-state) (seen new-key))
+          (conj visited (:pos initial-state)) ; include starting position
+          (recur new-state
+                 (conj visited (:pos new-state))
+                 (conj seen new-key)))))))
+
+(defn forms-cycle? [state pos]
+  (let [state-with-block (update state :grid #(add-obstruction % pos))]
+    (loop [current-state state-with-block
+           seen #{[(:pos state-with-block) (:dir state-with-block)]}]
+      (let [next-state (move current-state)
+            next-key [(:pos next-state) (:dir next-state)]]
         (cond
-          (or (:leaving new-state) (seen-states new-key))
-          (let [result (BitSet. grid-size)
-                grid-ref (volatile! grid)
-                initial-pos-ref (volatile! (:pos initial-state))]
-            (.. (IntStream/range 0 grid-size)
-                (parallel)
-                (forEach
-                 (reify IntConsumer
-                   (accept [_ i]
-                     (let [[x y] (index->pos state i)]
-                       (when (and (.get visited i)
-                                  (= \. (get-in @grid-ref [y x]))
-                                  (not= [x y] @initial-pos-ref)
-                                  (or (.get row-obstacles y)
-                                      (.get col-obstacles x)))
-                         (.set result i)))))))
-            result)
-
-          :else
-          (do
-            (.set visited curr-index)
-            (recur new-state
-                   visited
-                   (conj seen-states new-key))))))))
-
-(defn bitset->positions [state bitset]
-  (for [i (range (.size bitset))
-        :when (.get bitset i)]
-    (index->pos state i)))
-
-(defn process-batch [input positions batch-size]
-  (let [size (count positions)
-        results (BitSet. size)
-        pos-array (object-array size)]
-
-    (dotimes [i size]
-      (aset pos-array i (nth positions i)))
-
-    (dotimes [i (quot (+ size (dec batch-size)) batch-size)]
-      (let [start (* i batch-size)
-            end (min size (+ start batch-size))]
-        (dotimes [j (- end start)]
-          (let [idx (+ start j)
-                pos (aget pos-array idx)]
-            (when (simulate-with-obstruction input pos)
-              (.set results idx))))))
-
-    (into #{}
-          (keep-indexed (fn [idx _]
-                          (when (.get results idx)
-                            (aget pos-array idx)))
-                        (range size)))))
+          (:leaving next-state) false
+          (seen next-key) true
+          :else (recur next-state
+                       (conj seen next-key)))))))
 
 (defn find-loop-positions [input]
   (let [initial-state (parse-input input)
-        visited-bitset (get-visited-positions input)
-        positions (vec (bitset->positions initial-state visited-bitset))
-        total-positions (count positions)
-        counter (atom 0)
-        results (atom #{})
-        n-cores (.. Runtime getRuntime availableProcessors)
-        positions-per-core (/ total-positions n-cores)
-        min-chunk-size 50
-        max-chunk-size 450
-        target-chunks-per-core 12
-        chunk-size (-> positions-per-core
-                       (/ target-chunks-per-core)
-                       (max min-chunk-size)
-                       (min max-chunk-size)
-                       int)
-        batch-size 16
-        fold-threshold (max 1 (quot chunk-size 2))
-        chunks (partition-all chunk-size positions)
-        total-chunks (count chunks)]
-
-    (print "\u001B[?25l\n\n")
-    (flush)
-
-    (let [final-results
-          (->> chunks
-               (r/fold
-                fold-threshold
-                combine-results
-                (fn [acc chunk]
-                  (let [curr (swap! counter inc)]
-                    (when (zero? (mod curr 1))
-                      (print (format "\u001B[2A\rProgress: %.1f%% (%d/%d)\nFound: %d valid positions\n"
-                                     (* 100.0 (/ curr total-chunks))
-                                     (min total-positions (* curr chunk-size))
-                                     total-positions
-                                     (count @results)))
-                      (flush))
-
-                    (let [chunk-results (process-batch input chunk batch-size)]
-                      (swap! results into chunk-results)
-                      (into acc chunk-results))))))]
-
-      (print (format "\u001B[2A\rProgress: 100.0%% (%d/%d)\nFound: %d valid positions\n"
-                     total-positions total-positions
-                     (count final-results)))
-      (print "\u001B[?25h")
-      final-results)))
+        start-pos (:pos initial-state)
+        visited (get-visited-positions input)]
+    (->> visited
+         (filter #(and (not= % start-pos)
+                       (= \. (get-in (:grid initial-state) [(second %) (first %)]))))
+         (pmap #(when (forms-cycle? initial-state %) %))
+         (filter identity)
+         count)))
 
 (let [input (slurp "inputs/2024/6.txt")]
   (print "Choose part (1/2): ")
   (flush)
   (case (read-line)
     "1" (simulate input)
-    "2" (time (find-loop-positions input))
+    "2" (time (println (find-loop-positions input)))
     (println "Invalid choice.")))
