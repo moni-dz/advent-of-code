@@ -18,11 +18,6 @@
      :width width
      :height height}))
 
-(defn calculate-mirrored-antinodes [[[x1 y1] _] [[x2 y2] _] width height]
-  (->> [[(- (* 2 x2) x1) (- (* 2 y2) y1)]
-        [(- (* 2 x1) x2) (- (* 2 y1) y2)]]
-       (filterv #(within-grid? % width height))))
-
 (defn line-points [[x1 y1] [x2 y2] width height]
   (let [dx (- x2 x1)
         dy (- y2 y1)
@@ -39,30 +34,33 @@
        (into #{} xf (iterate #(mapv + % step) [x2 y2]))
        (into #{} xf (iterate #(mapv - % step) [x1 y1]))))))
 
-(defn calculate-line-antinodes
-  [group width height]
-  (->> (combo/combinations group 2)
-       (mapcat (fn [[[pos1 _] [pos2 _]]]
-                 (line-points pos1 pos2 width height)))
-       (filter #(within-grid? % width height))
-       set))
+(defn calculate-antinodes [freq-groups width height type]
+  (->> freq-groups
+       (map (fn [[_ group]]
+              (case type
+                :mirrored
+                (let [positions (map first group)]
+                  (->> (for [p1 positions
+                             p2 positions
+                             :when (not= p1 p2)
+                             :let [[x1 y1] p1
+                                   [x2 y2] p2
+                                   mirror [(- (* 2 x2) x1) (- (* 2 y2) y1)]]
+                             :when (within-grid? mirror width height)]
+                         mirror)))
+
+                :line
+                (->> (combo/combinations group 2)
+                     (mapcat (fn [[[pos1 _] [pos2 _]]]
+                               (line-points pos1 pos2 width height)))
+                     (filter #(within-grid? % width height))))))
+       (apply concat)
+       set
+       count))
 
 (let [{:keys [antennae width height]} (parse-input (slurp "inputs/2024/8.txt"))
       freq-groups (group-by second antennae)
       multi-freq-groups (filter #(>= (count (second %)) 2) freq-groups)]
 
-  [(time (->> multi-freq-groups
-              (map (fn [[_ group]]
-                     (mapcat (fn [[ant1 ant2]]
-                               (calculate-mirrored-antinodes ant1 ant2 width height))
-                             (combo/combinations group 2))))
-              (apply concat)
-              set
-              count))
-
-   (time (->> multi-freq-groups
-              (map (fn [[_ group]]
-                     (calculate-line-antinodes group width height)))
-              (apply concat)
-              set
-              count))])
+  [(time (calculate-antinodes multi-freq-groups width height :mirrored))
+   (time (calculate-antinodes multi-freq-groups width height :line))])
