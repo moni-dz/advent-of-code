@@ -56,65 +56,51 @@
                      nil nil 0)
               (recur (inc idx) files nil nil 0))))))))
 
-(defn find-free-spans [blocks]
-  (let [n (count blocks)]
-    (loop [idx 0
-           spans (transient [])
-           start nil
-           size 0]
-      (if (>= idx n)
-        (if start
-          (persistent! (conj! spans [start size]))
-          (persistent! spans))
-        (let [is-free (= (blocks idx) \.)]
-          (cond
-            (and is-free (nil? start))
-            (recur (inc idx) spans idx 1)
+(defn find-free-space [blocks start size]
+  (loop [pos start
+         n 0]
+    (cond
+      (= n size) start
+      (>= pos (count blocks)) nil
+      (= (blocks pos) \.) (recur (inc pos) (inc n))
+      :else nil)))
 
-            (and is-free start)
-            (recur (inc idx) spans start (inc size))
+(defn find-suitable-position [blocks memo size start max-pos]
+  (loop [pos (memo (dec size))]
+    (cond
+      (>= pos start) nil
+      (>= pos max-pos) nil
+      :else
+      (let [free-space (find-free-space blocks pos size)]
+        (if free-space
+          free-space
+          (recur (inc pos)))))))
 
-            (and (not is-free) start)
-            (recur (inc idx) (conj! spans [start size]) nil 0)
-
-            :else
-            (recur (inc idx) spans nil 0)))))))
+(defn update-blocks [blocks start end id pos size]
+  (-> blocks
+      (as-> b (reduce #(assoc %1 %2 \.) b (range start (inc end))))
+      (as-> b (reduce #(assoc %1 %2 id) b (range pos (+ pos size))))))
 
 (defn compact-files [blocks]
-  (let [files (sort-by first > (find-files blocks))
-        spans (find-free-spans blocks)
-        blks (vec blocks)]
+  (let [block-count (count blocks)
+        positions (vec (repeat 10 0))
+        sorted-files (->> (find-files blocks)
+                          (sort-by #(nth % 2) >))]
 
-    (loop [curr-blks blks
-           [file & rest-files] files
-           curr-spans spans]
+    (loop [blocks (vec blocks)
+           files sorted-files
+           current positions]
+      (if (empty? files)
+        blocks
+        (let [[id size start end] (first files)
+              suitable (find-suitable-position blocks current size start block-count)]
+          (if suitable
+            (let [new-blocks (update-blocks blocks start end id suitable size)
+                  new-positions (assoc current (dec size) (+ suitable size))]
+              (recur new-blocks (rest files) new-positions))
 
-      (if (nil? file)
-        curr-blks
-        (let [[id size start end] file
-              suitable-span (first
-                             (filter (fn [[s sz]]
-                                       (and (< s start) (>= sz size)))
-                                     curr-spans))]
-          (if suitable-span
-            (let [[span-start span-size] suitable-span
-
-                  new-spans (cond-> (filterv #(not= (first %) span-start) curr-spans)
-                              (> span-size size)
-                              (conj [(+ span-start size) (- span-size size)]))
-
-                  new-spans (conj new-spans [start (- (inc end) start)])
-
-                  new-blks (reduce (fn [b i] (assoc b i \.))
-                                   curr-blks
-                                   (range start (inc end)))
-
-                  new-blks (reduce (fn [b i] (assoc b i id))
-                                   new-blks
-                                   (range span-start (+ span-start size)))]
-
-              (recur new-blks rest-files new-spans))
-            (recur curr-blks rest-files curr-spans)))))))
+            (let [new-positions (assoc current (dec size) start)]
+              (recur blocks (rest files) new-positions))))))))
 
 (defn checksum [blocks]
   (reduce-kv
@@ -125,7 +111,7 @@
    0
    (vec blocks)))
 
-(let [data (-> (slurp "inputs/2024/9.txt")
+(let [data (-> (slurp "inputs/2024/9.evil.txt")
                create-disk-map)]
   [(time (-> data compact-chunks checksum))
    (time (-> data compact-files checksum))])
