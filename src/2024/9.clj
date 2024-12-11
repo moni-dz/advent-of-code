@@ -84,7 +84,7 @@
 
 (defn compact-files [blocks]
   (let [block-count (count blocks)
-        positions (vec (repeat 10 0))
+        positions (transient (vec (repeat 10 0)))
         sorted-files (->> (find-files blocks)
                           (sort-by #(nth % 2) >))]
 
@@ -103,10 +103,10 @@
             (let [suitable (find-suitable-position blocks current size start block-count)]
               (if suitable
                 (let [new-blocks (update-blocks blocks start end id suitable size)
-                      new-positions (assoc current (dec size) (+ suitable size))]
+                      new-positions (assoc! current (dec size) (+ suitable size))]
                   (recur new-blocks (rest files) new-positions min-movable-size))
 
-                (let [new-positions (assoc current (dec size) start)]
+                (let [new-positions (assoc! current (dec size) start)]
                   (recur blocks (rest files) new-positions size))))))))))
 
 (defn checksum [blocks]
@@ -120,5 +120,5 @@
 
 (let [data (-> (slurp "inputs/2024/9.evil.txt")
                create-disk-map)]
-  [(time (-> data compact-chunks checksum))
-   (time (-> data compact-files checksum))])
+  [(-> data compact-chunks checksum)
+   (-> data compact-files checksum)])
