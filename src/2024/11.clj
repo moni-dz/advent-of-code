@@ -26,11 +26,13 @@
    stones))
 
 (defn count-stones [stones n]
-  (loop [stones (frequencies stones)
-         blinks 0]
-    (if (= blinks n)
-      (reduce + (vals stones))
-      (recur (transform-stones stones) (inc blinks)))))
+  (->> stones
+       frequencies
+       (iterate transform-stones)
+       (drop n)
+       first
+       vals
+       (reduce +)))
 
 (let [data (-> (slurp "inputs/2024/11.txt")
                (str/split #"\s+")
