@@ -42,6 +42,7 @@
         (if curr-id
           (persistent! (conj! files [curr-id size start (dec idx)]))
           (persistent! files))
+
         (let [blk (blocks idx)]
           (if (number? blk)
             (if (and curr-id (= blk curr-id))
@@ -65,8 +66,8 @@
       (= (blocks pos) \.) (recur (inc pos) (inc n))
       :else nil)))
 
-(defn find-suitable-position [blocks memo size start max-pos]
-  (loop [pos (memo (dec size))]
+(defn find-suitable-position [blocks positions size start max-pos]
+  (loop [pos (positions (dec size))]
     (cond
       (>= pos start) nil
       (>= pos max-pos) nil
@@ -89,18 +90,24 @@
 
     (loop [blocks (vec blocks)
            files sorted-files
-           current positions]
+           current positions
+           min-movable-size 10]
+
       (if (empty? files)
         blocks
-        (let [[id size start end] (first files)
-              suitable (find-suitable-position blocks current size start block-count)]
-          (if suitable
-            (let [new-blocks (update-blocks blocks start end id suitable size)
-                  new-positions (assoc current (dec size) (+ suitable size))]
-              (recur new-blocks (rest files) new-positions))
 
-            (let [new-positions (assoc current (dec size) start)]
-              (recur blocks (rest files) new-positions))))))))
+        (let [[id size start end] (first files)]
+          (if (>= size min-movable-size)
+            (recur blocks (rest files) current min-movable-size)
+
+            (let [suitable (find-suitable-position blocks current size start block-count)]
+              (if suitable
+                (let [new-blocks (update-blocks blocks start end id suitable size)
+                      new-positions (assoc current (dec size) (+ suitable size))]
+                  (recur new-blocks (rest files) new-positions min-movable-size))
+
+                (let [new-positions (assoc current (dec size) start)]
+                  (recur blocks (rest files) new-positions size))))))))))
 
 (defn checksum [blocks]
   (reduce-kv
