@@ -1,12 +1,12 @@
 (require '[clojure.string :as str])
 
-(def adjacent-deltas [[-1 0] [1 0] [0 -1] [0 1]])
+(def adjacent-deltas (mapcat #(vector [% 0] [0 %]) [-1 1]))
 
 (defn adjacent-positions [pos]
   (map #(mapv + pos %) adjacent-deltas))
 
 (defn explore-area [grid [pos value] visited]
-  (loop [[curr & rest] [pos], seen visited, area #{pos}]
+  (loop [[curr & rest] [pos] seen visited area #{pos}]
     (if-not curr
       [area seen]
       (let [neighbors (->> (adjacent-positions curr)
