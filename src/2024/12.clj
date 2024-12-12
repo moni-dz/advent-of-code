@@ -36,15 +36,15 @@
        (filter #(not= val (get-in grid % nil)))
        count))
 
-(defn rotate [[y x]] [x (- y)])
-
 (defn count-edges [pos dir]
-  (let [perp (rotate dir)]
+  (let [perp [(- (dir 1)) (dir 0)]
+        ahead #(mapv + % dir)
+        side #(mapv + % perp)
+        edge? #(not (pos (ahead %)))
+        corner? #(not (pos (side %)))
+        tunnel? #(every? pos [(side %) (ahead (side %))])]
     (->> pos
-         (filter #(and (not (pos (mapv + % dir)))
-                       (or (not (pos (mapv + % perp)))
-                           (and (pos (mapv + % perp))
-                                (pos (mapv + (mapv + % perp) dir))))))
+         (filter #(and (edge? %) (or (corner? %) (tunnel? %))))
          count)))
 
 (let [grid (->> "inputs/2024/12.txt" slurp str/split-lines (mapv vec))
