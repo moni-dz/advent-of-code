@@ -17,18 +17,17 @@
                (into area neighbors))))))
 
 (defn find-areas [grid]
-  (let [dims (for [i (range (count grid))
-                   j (range (count (first grid)))]
-               [i j])]
-    (->> dims
-         (reduce (fn [[areas seen] pos]
-                   (if (seen pos)
-                     [areas seen]
-                     (let [[area new-seen] (explore-area grid [pos (get-in grid pos)] seen)]
-                       [(cond-> areas (seq area) (conj {:pos area :val (get-in grid pos)}))
-                        new-seen])))
-                 [[] #{}])
-         first)))
+  (->> (for [i (range (count grid))
+             j (range (count (first grid)))]
+         [i j])
+       (reduce (fn [[areas seen :as acc] pos]
+                 (if (seen pos)
+                   acc
+                   (let [[area new-seen] (explore-area grid [pos (get-in grid pos)] seen)]
+                     [(cond-> areas (seq area) (conj {:pos area :val (get-in grid pos)}))
+                      new-seen])))
+               [[] #{}])
+       first))
 
 (defn boundary-count [grid {:keys [pos val]}]
   (->> pos
