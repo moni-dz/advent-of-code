@@ -11,7 +11,7 @@
       [area seen]
       (let [neighbors (->> (adjacent-positions curr)
                            (remove seen)
-                           (filter #(= value (get-in grid % nil))))]
+                           (filterv #(= value (get-in grid % nil))))]
         (recur (into rest neighbors)
                (into seen neighbors)
                (into area neighbors))))))
@@ -32,7 +32,7 @@
 (defn boundary-count [grid {:keys [pos val]}]
   (->> pos
        (mapcat adjacent-positions)
-       (filter #(not= val (get-in grid % nil)))
+       (filterv #(not= val (get-in grid % nil)))
        count))
 
 (defn count-edges [pos dir]
@@ -43,18 +43,14 @@
         corner? #(not (pos (side %)))
         tunnel? #(every? pos [(side %) (ahead (side %))])]
     (->> pos
-         (filter #(and (edge? %) (or (corner? %) (tunnel? %))))
+         (filterv #(and (edge? %) (or (corner? %) (tunnel? %))))
          count)))
 
 (let [grid (->> "inputs/2024/12.txt" slurp str/split-lines (mapv vec))
-      areas (find-areas grid)]
-  [(->> areas
-        (map #(* (count (:pos %))
-                 (boundary-count grid %)))
-        (reduce +))
-   (->> areas
-        (map #(* (count (:pos %))
-                 (->> adjacent-deltas
-                      (map (partial count-edges (:pos %)))
-                      (reduce +))))
-        (reduce +))])
+      areas (find-areas grid)
+      area-size (comp count :pos)
+      score (fn [f] #(* (area-size %) (f %)))]
+  [(transduce (map (score #(boundary-count grid %))) + areas)
+   (transduce (map (score #(transduce (map (partial count-edges (:pos %)))
+                                      + adjacent-deltas)))
+              + areas)])
