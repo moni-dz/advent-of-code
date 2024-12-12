@@ -3,20 +3,20 @@
 (def deltas [[1 0] [-1 0] [0 1] [0 -1]])
 (def adjacent #(map (partial mapv + %) deltas))
 
-(defn explore [grid [pos value] seen]
-  (loop [[curr & rest] [pos], seen seen, area #{pos}]
+(defn explore [grid [pos value] visited]
+  (loop [[curr & rest] [pos], seen visited, region #{pos}]
     (if-not curr
-      [area seen]
+      [region seen]
       (let [adjs (->> (adjacent curr) (remove seen) (filter #(= value (get-in grid % nil))))]
-        (recur (into rest adjs) (into seen adjs) (into area adjs))))))
+        (recur (into rest adjs) (into seen adjs) (into region adjs))))))
 
 (defn areas [grid]
   (->> (for [i (range (count grid)), j (range (count (first grid)))] [i j])
-       (reduce (fn [[areas seen] pos]
-                 (if (seen pos)
-                   [areas seen]
-                   (let [[area seen'] (explore grid [pos (get-in grid pos)] seen)]
-                     [(conj areas {:pos area :value (get-in grid pos)}) seen'])))
+       (reduce (fn [[regions visited] pos]
+                 (if (visited pos)
+                   [regions visited]
+                   (let [[region seen] (explore grid [pos (get-in grid pos)] visited)]
+                     [(conj regions {:pos region :value (get-in grid pos)}) seen])))
                [[] #{}])
        first))
 
