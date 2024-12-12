@@ -1,56 +1,36 @@
 (require '[clojure.string :as str])
 
-(def adjacent-deltas (mapcat #(vector [% 0] [0 %]) [-1 1]))
+(def deltas [[1 0] [-1 0] [0 1] [0 -1]])
+(def adjacent #(map (partial mapv + %) deltas))
 
-(defn adjacent-positions [pos]
-  (map #(mapv + pos %) adjacent-deltas))
-
-(defn explore-area [grid [pos value] visited]
-  (loop [[curr & rest] [pos] seen visited area #{pos}]
+(defn explore [grid [pos value] seen]
+  (loop [[curr & rest] [pos], seen seen, area #{pos}]
     (if-not curr
       [area seen]
-      (let [neighbors (->> (adjacent-positions curr)
-                           (remove seen)
-                           (filterv #(= value (get-in grid % nil))))]
-        (recur (into rest neighbors)
-               (into seen neighbors)
-               (into area neighbors))))))
+      (let [adjs (->> (adjacent curr) (remove seen) (filter #(= value (get-in grid % nil))))]
+        (recur (into rest adjs) (into seen adjs) (into area adjs))))))
 
-(defn find-areas [grid]
-  (->> (for [i (range (count grid))
-             j (range (count (first grid)))]
-         [i j])
-       (reduce (fn [[areas seen :as acc] pos]
+(defn areas [grid]
+  (->> (for [i (range (count grid)), j (range (count (first grid)))] [i j])
+       (reduce (fn [[areas seen] pos]
                  (if (seen pos)
-                   acc
-                   (let [[area new-seen] (explore-area grid [pos (get-in grid pos)] seen)]
-                     [(cond-> areas (seq area) (conj {:pos area :val (get-in grid pos)}))
-                      new-seen])))
+                   [areas seen]
+                   (let [[area seen'] (explore grid [pos (get-in grid pos)] seen)]
+                     [(conj areas {:pos area :value (get-in grid pos)}) seen'])))
                [[] #{}])
        first))
 
-(defn boundary-count [grid {:keys [pos val]}]
-  (->> pos
-       (mapcat adjacent-positions)
-       (filterv #(not= val (get-in grid % nil)))
-       count))
+(defn boundaries [grid {:keys [pos value]}]
+  (->> pos (mapcat adjacent) (filter #(not= value (get-in grid % nil))) count))
 
-(defn count-edges [pos dir]
+(defn edges [pos dir]
   (let [perp [(- (dir 1)) (dir 0)]
-        ahead #(mapv + % dir)
-        side #(mapv + % perp)
-        edge? #(not (pos (ahead %)))
-        corner? #(not (pos (side %)))
+        ahead #(mapv + % dir), side #(mapv + % perp)
+        edge? #(not (pos (ahead %))), corner? #(not (pos (side %)))
         tunnel? #(every? pos [(side %) (ahead (side %))])]
-    (->> pos
-         (filterv #(and (edge? %) (or (corner? %) (tunnel? %))))
-         count)))
+    (->> pos (filterv #(and (edge? %) (or (corner? %) (tunnel? %)))) count)))
 
 (let [grid (->> "inputs/2024/12.txt" slurp str/split-lines (mapv vec))
-      areas (find-areas grid)
-      area-size (comp count :pos)
-      score (fn [f] #(* (area-size %) (f %)))]
-  [(transduce (map (score #(boundary-count grid %))) + areas)
-   (transduce (map (score #(transduce (map (partial count-edges (:pos %)))
-                                      + adjacent-deltas)))
-              + areas)])
+      price (fn [f a] (* (count (:pos a)) (f a)))]
+  [(transduce (map #(price (partial boundaries grid) %)) + (areas grid))
+   (transduce (map #(price (fn [a] (reduce + (map (partial edges (:pos a)) deltas))) %)) + (areas grid))])
