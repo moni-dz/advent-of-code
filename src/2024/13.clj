@@ -1,24 +1,20 @@
 (require '[clojure.string :as str]
          '[clojure.math :as math])
 
-(defn parse-input [input offset]
-  (->> (str/split-lines input)
-       (remove str/blank?)
-       (pmap (fn [line]
-               (if-let [[_ _ x y] (re-matches #"Button ([AB]): X\+(\d+), Y\+(\d+)" line)]
-                 [(parse-double x) (parse-double y)]
-                 (when-let [[_ x y] (re-matches #"Prize: X=(\d+), Y=(\d+)" line)]
-                   [(+ (parse-double x) offset) (+ (parse-double y) offset)]))))
+(defn parse [input offset]
+  (->> (remove str/blank? (str/split-lines input))
+       (pmap #(let [[x y] (pmap parse-double (re-seq #"\d+" %))]
+                (if (str/starts-with? % "Prize")
+                  [(+ x offset) (+ y offset)]
+                  [x y])))
        (partition 3)
-       (pmap (fn [[a b p]] {:a a :b b :p p}))))
+       (pmap #(zipmap [:a :b :p] %1))))
 
-(defn solve [{[x1 y1] :a [x2 y2] :b [px py] :p}]
-  (let [t1 (/ (- (* px y2) (* x2 py)) (- (* x1 y2) (* x2 y1)))
-        t2 (/ (- (* x1 py) (* px y1)) (- (* x1 y2) (* x2 y1)))]
-    (when (every? #(= % (math/floor %)) [t1 t2])
-      (+ (* t1 3.0) t2))))
+(defn solve [{[ax ay] :a [bx by] :b [px py] :p}]
+  (let [x (/ (- (* px by) (* bx py)) (- (* ax by) (* bx ay)))
+        y (/ (- (* ax py) (* px ay)) (- (* ax by) (* bx ay)))]
+    (when (every? #(= % (math/ceil %)) [x y])
+      (long (+ (* x 3) y)))))
 
 (->> [0 10000000000000]
-     (pmap #(parse-input (slurp "inputs/2024/13.txt") %))
-     (pmap #(->> % (keep solve) (reduce +)))
-     (mapv long))
+     (pmap #(->> % (parse (slurp "inputs/2024/13.txt")) (keep solve) (reduce +))))
