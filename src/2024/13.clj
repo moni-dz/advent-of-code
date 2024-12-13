@@ -1,5 +1,4 @@
-(require '[clojure.string :as str]
-         '[clojure.math :as math])
+(require '[clojure.string :as str])
 
 (defn parse [input offset]
   (->> (remove str/blank? (str/split-lines input))
@@ -13,7 +12,7 @@
 (defn solve [{[ax ay] :a [bx by] :b [px py] :p}]
   (let [x (/ (- (* px by) (* bx py)) (- (* ax by) (* bx ay)))
         y (/ (- (* ax py) (* px ay)) (- (* ax by) (* bx ay)))]
-    (when (every? #(= % (math/ceil %)) [x y])
+    (when (every? #(zero? (mod % 1)) [x y])
       (long (+ (* x 3) y)))))
 
 (->> [0 10000000000000]
