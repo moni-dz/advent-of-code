@@ -2,32 +2,28 @@
   (->> (re-seq #"-?\d+" s)
        (map parse-long)
        (partition 4)
-       (map (fn [[x y vx vy]] {:pos [x y] :vel [vx vy]}))))
+       (map #(zipmap [:p :v] (partition 2 %)))))
 
 (def quadrant
-  (fn [[x y] [w h]]
-    (when-not (or (= x (quot w 2))
-                  (= y (quot h 2)))
-      (inc (+ (* 2 (if (< y (quot h 2)) 0 1))
-              (if (< x (quot w 2)) 0 1))))))
+  (fn [[px py] {:keys [w h]}]
+    (when-not (or (= px (quot w 2)) (= py (quot h 2)))
+      (inc (+ (* 2 (if (< py (quot h 2)) 0 1))
+              (if (< px (quot w 2)) 0 1))))))
 
-(defn pos-at [robots dims t]
-  (set (for [{[x y] :pos [vx vy] :vel} robots]
-         [(mod (+ x (* t vx)) (dims 0))
-          (mod (+ y (* t vy)) (dims 1))])))
+(defn p-at [robots {:keys [w h]} t]
+  (set (for [{[px py] :p [vx vy] :v} robots]
+         [(mod (+ px (* t vx)) w) (mod (+ py (* t vy)) h)])))
 
-(defn step [dims {:keys [pos vel]}]
-  {:pos [(mod (+ (pos 0) (vel 0)) (dims 0))
-         (mod (+ (pos 1) (vel 1)) (dims 1))]
-   :vel vel})
+(defn step [{:keys [w h]} {[px py] :p [vx vy] :v :as robot}]
+  (assoc robot :p [(mod (+ px vx) w) (mod (+ py vy) h)]))
 
 (let [robots (parse-input (slurp "inputs/2024/14.txt"))
-      dims [101 103]]
+      dims {:w 101 :h 103}]
   [(->> (nth (iterate #(map (partial step dims) %) robots) 100)
-        (pmap :pos)
+        (pmap :p)
         (keep #(quadrant % dims))
         frequencies
         vals
         (apply *))
-   (some #(when (= (count (pos-at robots dims %)) (count robots)) %)
+   (some #(when (= (count (p-at robots dims %)) (count robots)) %)
          (rest (range)))])
