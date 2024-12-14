@@ -4,14 +4,15 @@
        (partition 4)
        (map (fn [[x y vx vy]] {:pos [x y] :vel [vx vy]}))))
 
-(defn quadrant [[x y] [w h]]
-  (when-not (or (= x (quot w 2)) (= y (quot h 2)))
-    (keyword (str (if (< y (quot h 2)) "top" "bottom")
-                  "-"
-                  (if (< x (quot w 2)) "left" "right")))))
+(def quadrant
+  (fn [[x y] [w h]]
+    (when-not (or (= x (quot w 2))
+                  (= y (quot h 2)))
+      (inc (+ (* 2 (if (< y (quot h 2)) 0 1))
+              (if (< x (quot w 2)) 0 1))))))
 
 (defn pos-at [robots dims t]
-  (set (for [{[x y] :p [vx vy] :v} robots]
+  (set (for [{[x y] :pos [vx vy] :vel} robots]
          [(mod (+ x (* t vx)) (dims 0))
           (mod (+ y (* t vy)) (dims 1))])))
 
@@ -23,7 +24,7 @@
 (let [robots (parse-input (slurp "inputs/2024/14.txt"))
       dims [101 103]]
   [(->> (nth (iterate #(map (partial step dims) %) robots) 100)
-        (map :pos)
+        (pmap :pos)
         (keep #(quadrant % dims))
         frequencies
         vals
