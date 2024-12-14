@@ -58,10 +58,10 @@
 (def BSU "\u001B[?2026h") ; Begin Synchronized Update
 (def ESU "\u001B[?2026l") ; End Synchronized Update
 
-(def DISPLAY-HEIGHT 46)
-(def DISPLAY-WIDTH 80)
+(def DISPLAY-HEIGHT 38)
+(def DISPLAY-WIDTH 76)
 (def LEFT-MARGIN 2)
-(def TOP-MARGIN 2)
+(def TOP-MARGIN 3)
 
 (defn get-terminal-size []
   [DISPLAY-HEIGHT (* DISPLAY-WIDTH 2)])
