@@ -2,8 +2,7 @@
 
 (defn parse-input [input]
   (let [[grid moves] (str/split input #"\n\n")]
-    [(mapv vec (str/split-lines grid))
-     moves]))
+    [(mapv vec (str/split-lines grid)) moves]))
 
 (defn create-wide-grid [grid]
   (let [wide {\# [\# \#] \O [\[ \]] \. [\. \.] \@ [\@ \.]}]
@@ -33,9 +32,7 @@
 (defn push [grid pos [dx dy :as delta]]
   (if (some #(= (get-in grid %) \#) pos)
     [grid false]
-    (let [pushed (set (for [p pos
-                            [x y] (get-affected-pos grid p delta)]
-                        [(+ x dx) (+ y dy)]))]
+    (let [pushed (set (for [p pos [x y] (get-affected-pos grid p delta)] [(+ x dx) (+ y dy)]))]
       (if (every? #(= (get-in grid %) \.) pushed)
         [(update-grid grid pushed delta) true]
         (let [[new-grid success] (push grid pushed delta)]
