@@ -19,15 +19,26 @@
         max-y (dec (count grid))]
     (and (<= 0 x max-x) (<= 0 y max-y))))
 
-(defn valid-move? [pos grid]
-  (and (in-bounds? pos grid)
-       (not= \# (get-in grid (reverse pos)))))
+(def valid-move?
+  (memoize (fn [pos grid]
+             (and (in-bounds? pos grid)
+                  (not= \# (get-in grid (reverse pos)))))))
 
 (defn turn [[dx dy]]
   [[(- dy) dx] [dy (- dx)]])
 
+(defn dead-end? [pos dir grid]
+  (let [forward (mapv + pos dir)
+        [left right] (turn dir)]
+    (and (not (valid-move? forward grid))
+         (not (valid-move? (mapv + pos left) grid))
+         (not (valid-move? (mapv + pos right) grid)))))
+
 (def manhattan-dist
   (memoize (fn [pos end] (reduce + (map (comp abs -) pos end)))))
+
+(defn min-remaining-steps [[x y] [u v]]
+  (+ (abs (- x u)) (abs (- y v))))
 
 (defn state->key [{:keys [pos dir steps]}] [pos dir steps])
 
@@ -37,67 +48,90 @@
   (swap! vertex-costs
          (fn [costs]
            (let [key [pos dir]]
-             (if (and (contains? costs key)
-                      (>= cost (costs key)))
+             (if (and (contains? costs key) (>= cost (get costs key)))
                costs
                (assoc costs key cost))))))
 
 (defn get-vertex-cost [pos dir]
   (get @vertex-costs [pos dir] Double/POSITIVE_INFINITY))
 
-(defn create-successors [{:keys [pos dir cost steps visited]} grid end costs]
-  (let [forward (mapv + pos dir)
-        [left right] (turn dir)
-        straight-bonus (* 40 (inc steps))
-        turn-penalty (* 5 (inc steps))]
-    (->> (concat
-          (when (valid-move? forward grid)
-            (let [new-cost (inc cost)]
-              (when (<= new-cost (get-vertex-cost forward dir))
-                [(do
-                   (update-vertex-cost! forward dir new-cost)
-                   {:pos forward :dir dir :cost new-cost :steps (inc steps) :visited (conj visited forward)})])))
-          (for [new-dir [left right]
-                :let [new-cost (+ cost 1000)]
-                :when (<= new-cost (get-vertex-cost pos new-dir))]
-            (do
-              (update-vertex-cost! pos new-dir new-cost)
-              {:pos pos :dir new-dir :cost new-cost :steps 0 :visited visited})))
-         (filter #(let [key (state->key %)]
-                    (or (not (costs key))
-                        (<= (:cost %) (costs key)))))
-         (map #(vector % (+ (:cost %)
-                            (manhattan-dist (:pos %) end)
-                            (if (= (:dir %) dir)
-                              (- straight-bonus)
-                              turn-penalty))))
-         (into {}))))
+(defn create-forward-successor [{:keys [pos dir cost steps visited]} grid]
+  (let [pos (mapv + pos dir)
+        cost (inc cost)]
+    (when (and (valid-move? pos grid)
+               (<= cost (get-vertex-cost pos dir))
+               (not (dead-end? pos dir grid)))
+      (update-vertex-cost! pos dir cost)
+      {:pos pos :dir dir :cost cost :steps (inc steps) :visited (conj visited pos)})))
+
+(defn create-turn-successors [{:keys [pos dir cost visited]}]
+  (for [dir (turn dir)
+        :let [cost (+ cost 1000)]
+        :when (<= cost (get-vertex-cost pos dir))]
+    (do
+      (update-vertex-cost! pos dir cost)
+      {:pos pos :dir dir :cost cost :steps 0 :visited visited})))
+
+(defn valid-successor? [costs successor]
+  (let [key (state->key successor)]
+    (or (not (costs key)) (<= (:cost successor) (costs key)))))
+
+(defn priority [current-cost heuristic-cost]
+  (+ current-cost (* 1.1 heuristic-cost)))
+
+(defn heuristic [end successor]
+  (let [h-cost (manhattan-dist (:pos successor) end)]
+    [successor (priority (:cost successor) h-cost)]))
+
+(defn create-successors [{:keys [cost pos] :as state} grid end costs score]
+  (when (and (< cost score)
+             (< (+ cost (manhattan-dist pos end)) (* 1.5 score))
+             (< (+ cost
+                   (* 1000 (quot (min-remaining-steps pos end) 3))
+                   (min-remaining-steps pos end))
+                (* 2.0 score)))
+    (persistent!
+     (reduce
+      (fn [acc successor]
+        (let [[s priority] (heuristic end successor)]
+          (if (valid-successor? costs successor)
+            (assoc! acc s priority)
+            acc)))
+      (transient {})
+      (concat
+       (when-let [forward (create-forward-successor state grid)]
+         [forward])
+       (create-turn-successors state))))))
+
+(defn update-scores [score successors]
+  (persistent! (reduce-kv
+                (fn [s successor _] (assoc! s (state->key successor) (:cost successor)))
+                (transient score)
+                successors)))
 
 (defn a* [grid start end]
-  (loop [frontier (priority-map start (manhattan-dist (:pos start) end))
+  (loop [frontier (priority-map start (priority 0 (manhattan-dist (:pos start) end)))
          score {(state->key start) 0}
-         best-score Double/POSITIVE_INFINITY
-         best-paths []]
+         optimal Double/POSITIVE_INFINITY
+         paths []]
     (if (empty? frontier)
-      [best-score best-paths]
+      [optimal paths]
       (let [[current _] (peek frontier)
-            {current-cost (state->key current)} score]
+            current-cost (get score (state->key current))]
         (if (= (:pos current) end)
-          (if (<= current-cost best-score)
+          (if (<= current-cost optimal)
             (recur (pop frontier)
                    score
                    current-cost
-                   (if (= current-cost best-score)
-                     (conj best-paths current)
+                   (if (= current-cost optimal)
+                     (conj paths current)
                      [current]))
-            (recur (pop frontier) score best-score best-paths))
+            (recur (pop frontier) score optimal paths))
           (let [[new-frontier new-scores]
-                (-> current
-                    (create-successors grid end score)
-                    (as-> successors
-                          [(into (pop frontier) successors)
-                           (into score (for [[next _] successors] [(state->key next) (:cost next)]))]))]
-            (recur new-frontier new-scores best-score best-paths)))))))
+                (if-let [successors (create-successors current grid end score optimal)]
+                  [(into (pop frontier) successors) (update-scores score successors)]
+                  [(pop frontier) score])]
+            (recur new-frontier new-scores optimal paths)))))))
 
 (let [data (str/split-lines (slurp "inputs/2024/16.txt"))
       {:keys [grid start end]} (parse-input data)
