@@ -33,7 +33,9 @@
 
 (defn create-successors [{:keys [pos dir cost steps visited]} grid goal costs]
   (let [forward (mapv + pos dir)
-        [left right] (turn dir)]
+        [left right] (turn dir)
+        straight-bonus (* 40 (inc steps))
+        turn-penalty (* 5 (inc steps))]
     (->> (concat
           (when (valid-move? forward grid)
             [{:pos forward :dir dir :cost (inc cost) :steps (inc steps) :visited (conj visited forward)}])
@@ -42,7 +44,11 @@
          (filter #(let [key (state->key %)]
                     (or (not (costs key))
                         (<= (:cost %) (costs key)))))
-         (map #(vector % (+ (:cost %) (manhattan-dist (:pos %) goal))))
+         (map #(vector % (+ (:cost %)
+                            (manhattan-dist (:pos %) goal)
+                            (if (= (:dir %) dir)
+                              (- straight-bonus)
+                              turn-penalty))))
          (into {}))))
 
 (defn a* [grid start goal]
@@ -74,6 +80,6 @@
 (let [data (str/split-lines (slurp "inputs/2024/16.txt"))
       {:keys [grid start goal]} (parse-input data)
       initial-state (assoc start :cost 0 :steps 0 :visited #{(:pos start)})
-      [score paths] (a* grid initial-state goal)
-      tiles (count (apply set/union (map :visited paths)))]
+      [score paths] (time (a* grid initial-state goal))
+      tiles (time (count (apply set/union (map :visited paths))))]
   [score tiles])
