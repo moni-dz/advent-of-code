@@ -9,11 +9,10 @@
     (mapv (fn [row] (vec (mapcat wide row))) grid)))
 
 (defn find-robot [grid]
-  (first (for [x (range (count grid))
-               y (range (count (first grid)))
-               :let [pos [x y]]
-               :when (= (get-in grid pos) \@)]
-           pos)))
+  (first
+   (for [x (range (count grid)) y (range (count (first grid)))
+         :when (= (get-in grid [x y]) \@)]
+     [x y])))
 
 (defn get-affected-pos [grid [x y :as pos] [dx _]]
   (case (get-in grid pos)
@@ -30,31 +29,25 @@
    grid pos))
 
 (defn push [grid pos [dx dy :as delta]]
-  (if (some #(= (get-in grid %) \#) pos)
-    [grid false]
+  (when-not (some #(= (get-in grid %) \#) pos)
     (let [pushed (set (for [p pos [x y] (get-affected-pos grid p delta)] [(+ x dx) (+ y dy)]))]
       (if (every? #(= (get-in grid %) \.) pushed)
-        [(update-grid grid pushed delta) true]
-        (let [[new-grid success] (push grid pushed delta)]
-          (if success
-            [(update-grid new-grid pushed delta) true]
-            [grid false]))))))
+        (update-grid grid pushed delta)
+        (some-> (push grid pushed delta)
+                (update-grid pushed delta))))))
 
 (defn move [[grid [x y :as pos]] c]
   (let [direction {\v [1 0] \^ [-1 0] \> [0 1] \< [0 -1]}]
     (if (= c \newline)
       [grid pos]
-      (let [[dx dy :as delta] (direction c [0 0])
-            [new success] (push grid #{pos} delta)]
-        (if success
-          [new [(+ x dx) (+ y dy)]]
+      (let [[dx dy :as delta] (direction c [0 0])]
+        (if-let [modified (push grid #{pos} delta)]
+          [modified [(+ x dx) (+ y dy)]]
           [grid pos])))))
 
 (defn solve [grid box]
-  (reduce + (for [x (range (count grid))
-                  y (range (count (first grid)))
-                  :let [pos [x y]]
-                  :when (= (get-in grid pos) box)]
+  (reduce + (for [x (range (count grid)) y (range (count (first grid)))
+                  :when (= (get-in grid [x y]) box)]
               (+ (* 100 x) y))))
 
 (let [[grid moves] (parse-input (slurp "inputs/2024/15.txt"))

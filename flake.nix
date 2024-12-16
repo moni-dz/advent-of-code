@@ -5,17 +5,16 @@
     devenv.url = "github:cachix/devenv";
   };
 
-  outputs = inputs@{ flake-parts, nixpkgs, ... }:
-    flake-parts.lib.mkFlake { inherit inputs; } {
-      imports = [ inputs.devenv.flakeModule ];
-      systems = nixpkgs.lib.systems.flakeExposed;
+  outputs = inputs: inputs.flake-parts.lib.mkFlake { inherit inputs; } {
+    imports = [ inputs.devenv.flakeModule ];
+    systems = inputs.nixpkgs.lib.systems.flakeExposed;
 
-      perSystem = { lib, pkgs, ... }: {
-        devenv.shells.default = {
-          packages = [ pkgs.hyperfine ];
-          languages.clojure.enable = true;
-          languages.java.jdk.package = pkgs.graalvm-ce;
-        };
+    perSystem = { lib, pkgs, ... }: {
+      devenv.shells.default = {
+        packages = [ pkgs.hyperfine ];
+        languages.clojure.enable = true;
+        languages.java.jdk.package = pkgs.graalvm-ce;
       };
     };
+  };
 }
