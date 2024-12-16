@@ -12,7 +12,7 @@
   (let [grid (mapv vec lines)]
     {:grid grid
      :start {:pos (find-marker grid \S) :dir [1 0]}
-     :goal (find-marker grid \E)}))
+     :end (find-marker grid \E)}))
 
 (defn in-bounds? [[x y] grid]
   (let [max-x (dec (count (first grid)))
@@ -27,32 +27,54 @@
   [[(- dy) dx] [dy (- dx)]])
 
 (def manhattan-dist
-  (memoize (fn [pos goal] (reduce + (map (comp abs -) pos goal)))))
+  (memoize (fn [pos end] (reduce + (map (comp abs -) pos end)))))
 
 (defn state->key [{:keys [pos dir steps]}] [pos dir steps])
 
-(defn create-successors [{:keys [pos dir cost steps visited]} grid goal costs]
+(def vertex-costs (atom {}))
+
+(defn update-vertex-cost! [pos dir cost]
+  (swap! vertex-costs
+         (fn [costs]
+           (let [key [pos dir]]
+             (if (and (contains? costs key)
+                      (>= cost (costs key)))
+               costs
+               (assoc costs key cost))))))
+
+(defn get-vertex-cost [pos dir]
+  (get @vertex-costs [pos dir] Double/POSITIVE_INFINITY))
+
+(defn create-successors [{:keys [pos dir cost steps visited]} grid end costs]
   (let [forward (mapv + pos dir)
         [left right] (turn dir)
         straight-bonus (* 40 (inc steps))
         turn-penalty (* 5 (inc steps))]
     (->> (concat
           (when (valid-move? forward grid)
-            [{:pos forward :dir dir :cost (inc cost) :steps (inc steps) :visited (conj visited forward)}])
-          (for [new-dir [left right]]
-            {:pos pos :dir new-dir :cost (+ cost 1000) :steps 0 :visited visited}))
+            (let [new-cost (inc cost)]
+              (when (<= new-cost (get-vertex-cost forward dir))
+                [(do
+                   (update-vertex-cost! forward dir new-cost)
+                   {:pos forward :dir dir :cost new-cost :steps (inc steps) :visited (conj visited forward)})])))
+          (for [new-dir [left right]
+                :let [new-cost (+ cost 1000)]
+                :when (<= new-cost (get-vertex-cost pos new-dir))]
+            (do
+              (update-vertex-cost! pos new-dir new-cost)
+              {:pos pos :dir new-dir :cost new-cost :steps 0 :visited visited})))
          (filter #(let [key (state->key %)]
                     (or (not (costs key))
                         (<= (:cost %) (costs key)))))
          (map #(vector % (+ (:cost %)
-                            (manhattan-dist (:pos %) goal)
+                            (manhattan-dist (:pos %) end)
                             (if (= (:dir %) dir)
                               (- straight-bonus)
                               turn-penalty))))
          (into {}))))
 
-(defn a* [grid start goal]
-  (loop [frontier (priority-map start (manhattan-dist (:pos start) goal))
+(defn a* [grid start end]
+  (loop [frontier (priority-map start (manhattan-dist (:pos start) end))
          score {(state->key start) 0}
          best-score Double/POSITIVE_INFINITY
          best-paths []]
@@ -60,7 +82,7 @@
       [best-score best-paths]
       (let [[current _] (peek frontier)
             {current-cost (state->key current)} score]
-        (if (= (:pos current) goal)
+        (if (= (:pos current) end)
           (if (<= current-cost best-score)
             (recur (pop frontier)
                    score
@@ -71,15 +93,17 @@
             (recur (pop frontier) score best-score best-paths))
           (let [[new-frontier new-scores]
                 (-> current
-                    (create-successors grid goal score)
+                    (create-successors grid end score)
                     (as-> successors
                           [(into (pop frontier) successors)
                            (into score (for [[next _] successors] [(state->key next) (:cost next)]))]))]
             (recur new-frontier new-scores best-score best-paths)))))))
 
 (let [data (str/split-lines (slurp "inputs/2024/16.txt"))
-      {:keys [grid start goal]} (parse-input data)
-      initial-state (assoc start :cost 0 :steps 0 :visited #{(:pos start)})
-      [score paths] (time (a* grid initial-state goal))
+      {:keys [grid start end]} (parse-input data)
+      origin (assoc start :cost 0 :steps 0 :visited #{(:pos start)})
+      _ (reset! vertex-costs {})
+      _ (update-vertex-cost! (:pos start) (:dir start) 0)
+      [score paths] (time (a* grid origin end))
       tiles (time (count (apply set/union (map :visited paths))))]
   [score tiles])
