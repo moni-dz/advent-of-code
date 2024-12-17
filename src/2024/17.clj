@@ -36,7 +36,7 @@
       ;; out
       5 [registers pc (conj outputs (mod op-value 8))]
 
-      ;; cdv
+      ;; bdv, cdv
       6 [(assoc registers :b (shift-right a op-value)) pc outputs]
       7 [(assoc registers :c (shift-right a op-value)) pc outputs])))
 
@@ -76,7 +76,6 @@
     (= output (vec program))))
 
 (let [prgm (->> "inputs/2024/17.txt" slurp parse-input)
-      _sample {:registers {:a 729 :b 0 :c 0} :program [0,1,5,4,3,0]}
-      solution (solve prgm)
-      _ (println (test-value solution prgm))]
+      solution (time (solve prgm))
+      _ (println (time (test-value solution prgm)))]
   [(run-vm prgm false) solution])
