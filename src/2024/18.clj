@@ -16,69 +16,52 @@
         :when (in-bounds? [nx ny] grid-size)]
     [nx ny]))
 
-(defn update-frontier [frontier costs node current-cost end]
-  (let [tentative-cost (inc current-cost)]
-    (if (or (not (contains? costs node)) (< tentative-cost (get costs node)))
-      (assoc frontier node (+ tentative-cost (manhattan-dist node end)))
-      frontier)))
+(defn should-update? [costs node current-cost]
+  (let [cost (inc current-cost)]
+    (or (not (contains? costs node)) (< cost (get costs node)))))
 
-(defn update-predecessors [predecessors costs node current current-cost]
-  (let [tentative-cost (inc current-cost)]
-    (if (or (not (contains? costs node)) (< tentative-cost (get costs node)))
-      (assoc predecessors node current)
-      predecessors)))
-
-(defn update-costs [costs node current-cost]
-  (let [tentative-cost (inc current-cost)]
-    (if (or (not (contains? costs node)) (< tentative-cost (get costs node)))
-      (assoc costs node tentative-cost)
-      costs)))
-
-(defn update-estimate [estimate costs node current-cost end]
-  (let [tentative-cost (inc current-cost)]
-    (if (or (not (contains? costs node)) (< tentative-cost (get costs node)))
-      (assoc estimate node (+ tentative-cost (manhattan-dist node end)))
-      estimate)))
+(defn update-state [state node current current-cost end]
+  (let [cost (inc current-cost)]
+    (if (should-update? (:costs state) node current-cost)
+      (-> state
+          (update :frontier assoc node (+ cost (manhattan-dist node end)))
+          (update :costs assoc node cost)
+          (update :predecessors assoc node current))
+      state)))
 
 (defn reconstruct-path [end predecessors]
   (loop [current end
-         path []]
+         path (transient [])]
     (if (nil? current)
-      path
-      (recur (get predecessors current)
-             (conj path current)))))
+      (persistent! path)
+      (recur (get predecessors current) (conj! path current)))))
 
-(defn process-end-node [end current predecessors return-path?]
-  (when (= current end)
-    (if return-path?
-      (dec (count (reconstruct-path end predecessors)))
-      true)))
-
-(defn process-neighbors [current grid-size corrupted closed-set]
+(defn process-neighbors [current grid-size corrupted visited]
   (->> (neighbors current grid-size)
-       (remove #(or (corrupted %) (closed-set %)))))
+       (remove #(or (corrupted %) (contains? visited %)))))
 
 (defn a* [start end grid-size corrupted return-path?]
-  (loop [frontier (priority-map start (manhattan-dist start end))
-         closed-set #{}
-         predecessors {}
-         costs {start 0}
-         estimate {start (manhattan-dist start end)}]
+  (loop [{:keys [frontier visited predecessors costs]}
+         {:frontier (priority-map start (manhattan-dist start end))
+          :visited (transient #{})
+          :predecessors {}
+          :costs {start 0}}]
     (cond
       (empty? frontier)
       nil
+
       :else
       (let [[current _] (peek frontier)]
-        (if-let [result (process-end-node end current predecessors return-path?)]
-          result
-          (let [neighbors (process-neighbors current grid-size corrupted closed-set)
-                current-cost (get costs current)]
-            (recur
-             (reduce #(update-frontier %1 costs %2 current-cost end) (pop frontier) neighbors)
-             (conj closed-set current)
-             (reduce #(update-predecessors %1 costs %2 current current-cost) predecessors neighbors)
-             (reduce #(update-costs %1 %2 current-cost) costs neighbors)
-             (reduce #(update-estimate %1 costs %2 current-cost end) estimate neighbors))))))))
+        (if (= current end)
+          (if return-path?
+            (dec (count (reconstruct-path end predecessors)))
+            true)
+          (let [neighbors (process-neighbors current grid-size corrupted visited)
+                current-cost (get costs current)
+                new-state (reduce #(update-state %1 %2 current current-cost end)
+                                  {:frontier (pop frontier) :costs costs :predecessors predecessors}
+                                  neighbors)]
+            (recur (-> new-state (assoc :visited (conj! visited current))))))))))
 
 (defn path-exists? [corrupted grid-size num-bytes]
   (let [current-corrupted (set (take num-bytes corrupted))
