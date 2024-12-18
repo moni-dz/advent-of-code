@@ -40,22 +40,17 @@
   (->> (neighbors current grid-size)
        (remove #(or (corrupted %) (contains? visited %)))))
 
-(defn a* [start end grid-size corrupted return-path?]
+(defn a* [start end grid-size corrupted]
   (loop [{:keys [frontier visited predecessors costs]}
          {:frontier (priority-map start (manhattan-dist start end))
           :visited (transient #{})
           :predecessors {}
           :costs {start 0}}]
-    (cond
-      (empty? frontier)
+    (if (empty? frontier)
       nil
-
-      :else
       (let [[current _] (peek frontier)]
         (if (= current end)
-          (if return-path?
-            (dec (count (reconstruct-path end predecessors)))
-            true)
+          (dec (count (reconstruct-path end predecessors)))
           (let [neighbors (process-neighbors current grid-size corrupted visited)
                 current-cost (get costs current)
                 new-state (reduce #(update-state %1 %2 current current-cost end)
@@ -63,29 +58,51 @@
                                   neighbors)]
             (recur (-> new-state (assoc :visited (conj! visited current))))))))))
 
-(defn path-exists? [corrupted grid-size num-bytes]
-  (let [current-corrupted (set (take num-bytes corrupted))
-        start [0 0]
-        end [(dec grid-size) (dec grid-size)]]
-    (boolean (a* start end grid-size current-corrupted false))))
+(defn root [parent x]
+  (let [p (get @parent x)]
+    (if (= x p)
+      x
+      (let [root (root parent p)]
+        (vreset! parent (assoc! @parent x root))
+        root))))
 
-(defn blocking-byte? [corrupted grid-size byte-idx]
-  (and (path-exists? corrupted grid-size (dec byte-idx))
-       (not (path-exists? corrupted grid-size byte-idx))))
+(defn union! [parent x y]
+  (let [[x y] [(root parent x) (root parent y)]]
+    (when (not= x y) (vreset! parent (assoc! @parent x y)))))
+
+(defn connected? [parent start end]
+  (= (root parent start) (root parent end)))
 
 (defn find-blocking-byte [corrupted grid-size]
-  (loop [low 12
-         high (count corrupted)]
-    (let [mid (quot (+ low high) 2)]
-      (cond
-        (= low high)
-        (nth corrupted (dec low))
-        (blocking-byte? corrupted grid-size mid)
-        (nth corrupted (dec mid))
-        (path-exists? corrupted grid-size mid)
-        (recur (inc mid) high)
-        :else
-        (recur low mid)))))
+  (let [parent (volatile!
+                (transient
+                 (into {} (for [x (range grid-size)
+                                y (range grid-size)]
+                            [[x y] [x y]]))))
+        start [0 0]
+        end [(dec grid-size) (dec grid-size)]
+        corrupted-set (volatile! (disj (set corrupted) start end))]
+
+    (doseq [x (range grid-size)
+            y (range grid-size)
+            :let [curr [x y]]
+            :when (not (@corrupted-set curr))]
+      (doseq [neighbor (neighbors curr grid-size)
+              :when (not (@corrupted-set neighbor))]
+        (union! parent curr neighbor)))
+
+    (loop [idx (dec (count corrupted))]
+      (when (>= idx 0)
+        (let [pos (nth corrupted idx)]
+          (when-not (or (= pos start) (= pos end))
+            (vswap! corrupted-set disj pos)
+            (doseq [neighbor (neighbors pos grid-size)
+                    :when (not (@corrupted-set neighbor))]
+              (union! parent pos neighbor))
+
+            (if (connected? parent start end)
+              pos
+              (recur (dec idx)))))))))
 
 (let [positions-to-corrupt (parse-input (slurp "inputs/2024/18.txt"))
       bytes-to-corrupt 1024
@@ -93,6 +110,6 @@
       start [0 0]
       end [(dec dimensions) (dec dimensions)]
       corrupted (set (take bytes-to-corrupt positions-to-corrupt))
-      path-length (time (a* start end dimensions corrupted true))
+      path-length (time (a* start end dimensions corrupted))
       blocking-byte (time (find-blocking-byte positions-to-corrupt dimensions))]
   [path-length blocking-byte])
