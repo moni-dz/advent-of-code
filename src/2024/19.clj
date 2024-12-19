@@ -8,12 +8,13 @@
   (and (<= (count pattern) (count design)) (= pattern (subs design 0 (count pattern)))))
 
 (def valid-design?
-  (memoize (fn [patterns design]
-             (if (empty? design)
-               true
-               (->> patterns
-                    (some #(and (valid-pattern? % design)
-                                (valid-design? patterns (subs design (count %))))))))))
+  (memoize
+   (fn [patterns design]
+     (if (empty? design)
+       true
+       (->> patterns
+            (some #(and (valid-pattern? % design)
+                        (valid-design? patterns (subs design (count %))))))))))
 
 (def count-designs
   (memoize
@@ -27,5 +28,5 @@
 
 (let [[patterns designs] (->> "inputs/2024/19.txt" slurp parse-input)
       possible (time (->> designs (filter #(valid-design? patterns %)) count))
-      permutations (time (->> designs (map #(count-designs patterns %)) (reduce +)))]
+      permutations (time (->> designs (pmap #(count-designs patterns %)) (reduce +)))]
   [possible permutations])
