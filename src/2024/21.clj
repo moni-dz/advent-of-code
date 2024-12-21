@@ -2,8 +2,8 @@
          '[clojure.math.combinatorics :as combo]
          '[clojure.set :as set])
 
-(def numbers {\7 [0 0], \8 [0 1], \9 [0 2], \4 [1 0], \5 [1 1], \6 [1 2], \1 [2 0], \2 [2 1], \3 [2 2], \0 [3 1], \A [3 2]})
-(def directions {\^ [0 1], \A [0 2], \< [1 0], \v [1 1], \> [1 2]})
+(def numbers (zipmap "7894561230A" [[0 0] [0 1] [0 2] [1 0] [1 1] [1 2] [2 0] [2 1] [2 2] [3 1] [3 2]]))
+(def directions (zipmap "^A<v>" [[0 1] [0 2] [1 0] [1 1] [1 2]]))
 
 (defn valid-path? [pos moves spot]
   (let [d {\^ [-1 0], \< [0 -1], \v [1 0], \> [0 1]}]
