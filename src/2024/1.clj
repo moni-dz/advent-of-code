@@ -1,15 +1,6 @@
 (require '[clojure.string :as str])
 
-(let
- [data (->> (slurp "inputs/2024/1.txt")
-            str/split-lines
-            (mapv #(mapv parse-long (str/split % #"\s+")))
-            (apply map vector))]
-  [(->> data
-        (map sort)
-        (apply map (fn [x y] (abs (- x y))))
-        (reduce +))
-   (->> data
-        ((fn [[xs ys]]
-           (transduce (map #(* % (count (filter #{%} ys)))) + xs))))])
-     ; [1722302 20373490]
+(let [[xs ys] (->> "inputs/2024/1.txt" slurp str/split-lines
+                   (mapv #(mapv parse-long (str/split % #"\s+"))) (apply map vector))]
+  [(reduce + (map #(abs (- %1 %2)) (sort xs) (sort ys)))
+   (reduce + (map #(* % (get (frequencies ys) % 0)) xs))])
