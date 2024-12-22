@@ -8,7 +8,7 @@
 
 (defn bananas [secret]
   (letfn [(keep-first [m [p price]] (if (contains? m p) m (assoc m p price)))]
-    (->> (iterate step secret) (take 2001) (map #(mod % 10))
+    (->> (take 2000 (iterate step secret)) (map #(mod % 10))
          (#(reduce keep-first {} (map vector (partition 4 1 (map - (rest %) %)) (drop 4 %)))))))
 
 (let [secrets (->> "inputs/2024/22.txt" slurp str/split-lines (mapv parse-long))]
