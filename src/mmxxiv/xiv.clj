@@ -1,3 +1,5 @@
+(ns mmxxiv.xiv)
+
 (defn parse-input [s]
   (->> (re-seq #"-?\d+" s)
        (map parse-long)

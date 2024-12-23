@@ -1,4 +1,5 @@
-(require '[clojure.string :as str])
+(ns mmxxiv.xii
+  (:require [clojure.string :as str]))
 
 (def deltas [[1 0] [-1 0] [0 1] [0 -1]])
 (def adjacent #(map (partial mapv + %) deltas))

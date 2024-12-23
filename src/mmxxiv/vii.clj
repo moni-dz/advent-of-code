@@ -1,5 +1,6 @@
-(require '[clojure.string :as str]
-         '[clojure.math :as math])
+(ns mmxxiv.vii
+  (:require [clojure.string :as str]
+            [clojure.math :as math]))
 
 (defn multiplier [n]
   (long (math/pow 10 (int (inc (math/log10 n))))))

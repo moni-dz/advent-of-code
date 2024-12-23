@@ -1,4 +1,5 @@
-(require '[clojure.string :as str])
+(ns mmxxiv.v
+  (:require [clojure.string :as str]))
 
 (defn valid-sequence? [rules nums]
   (let [valid? (set nums)

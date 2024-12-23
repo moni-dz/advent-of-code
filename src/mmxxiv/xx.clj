@@ -1,5 +1,6 @@
-(require '[clojure.string :as str]
-         '[clojure.core.reducers :as r])
+(ns mmxxiv.xx
+  (:require [clojure.string :as str]
+            [clojure.core.reducers :as r]))
 
 (defn parse-input [input]
   (->> input str/split-lines

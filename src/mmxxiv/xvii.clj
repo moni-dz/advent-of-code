@@ -1,4 +1,5 @@
-(require '[clojure.string :as str])
+(ns mmxxiv.xvii
+  (:require [clojure.string :as str]))
 
 (defn parse-input [input]
   (let [[a b c p] (str/split input #"\n+")

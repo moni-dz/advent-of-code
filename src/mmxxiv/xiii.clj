@@ -1,4 +1,5 @@
-(require '[clojure.string :as str])
+(ns mmxxiv.xiii
+  (:require [clojure.string :as str]))
 
 (defn parse [input offset]
   (->> (remove str/blank? (str/split-lines input))

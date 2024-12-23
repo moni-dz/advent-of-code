@@ -1,4 +1,5 @@
-(require '[clojure.string :as str])
+(ns mmxxiv.x
+  (:require [clojure.string :as str]))
 
 (defn is-peak? [height] (= height 9))
 

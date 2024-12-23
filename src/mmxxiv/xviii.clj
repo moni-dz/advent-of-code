@@ -1,5 +1,6 @@
-(require '[clojure.string :as str]
-         '[clojure.data.priority-map :refer [priority-map]])
+(ns mmxxiv.xviii
+  (:require [clojure.string :as str]
+            [clojure.data.priority-map :refer [priority-map]]))
 
 (defn parse-input [input]
   (->> input str/split-lines (map (comp #(mapv parse-long %) #(str/split % #",")))))

@@ -1,4 +1,6 @@
-(require '[clojure.string :as str])
+(ns mmxxiv.vi
+  (:require [clojure.string :as str])
+  (:import [java.util BitSet]))
 
 (def directions {\^ [0 -1], \v [0 1], \< [-1 0], \> [1 0]})
 (def turn-right {[0 -1] [1 0], [1 0] [0 1], [0 1] [-1 0], [-1 0] [0 -1]})
@@ -125,8 +127,8 @@
   (let [initial-state (parse-input input)
         {:keys [height width]} initial-state
         grid-size (* height width)
-        visited-bitset (java.util.BitSet. grid-size)
-        seen-states (java.util.BitSet. (* grid-size 4))
+        visited-bitset (BitSet. grid-size)
+        seen-states (BitSet. (* grid-size 4))
         initial-pos (:pos initial-state)
         initial-key (pos-dir->index initial-state initial-pos (:dir initial-state))]
 

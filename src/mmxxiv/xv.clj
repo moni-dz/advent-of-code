@@ -1,4 +1,5 @@
-(require '[clojure.string :as str])
+(ns mmxxiv.xv
+  (:require [clojure.string :as str]))
 
 (defn parse-input [input]
   (let [[grid moves] (str/split input #"\n\n")]

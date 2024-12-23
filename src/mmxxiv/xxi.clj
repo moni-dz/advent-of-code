@@ -1,6 +1,7 @@
-(require '[clojure.string :as str]
-         '[clojure.math.combinatorics :as combo]
-         '[clojure.set :as set])
+(ns mmxxiv.xxi
+  (:require [clojure.string :as str]
+            [clojure.math.combinatorics :as combo]
+            [clojure.set :as set]))
 
 (def numbers (zipmap "7894561230A" [[0 0] [0 1] [0 2] [1 0] [1 1] [1 2] [2 0] [2 1] [2 2] [3 1] [3 2]]))
 (def directions (zipmap "^A<v>" [[0 1] [0 2] [1 0] [1 1] [1 2]]))

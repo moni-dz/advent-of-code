@@ -1,3 +1,5 @@
+(ns mmxxiv.iii)
+
 (defn process-muls [input]
   (->> input
        (re-seq #"mul\(([-+]?\d+),([-+]?\d+)\)")

@@ -1,7 +1,8 @@
-(import '[java.awt.image BufferedImage]
-        '[java.awt Color]
-        '[javax.imageio ImageIO]
-        '[java.io File])
+(ns mmxxiv.xiv.v
+  (:import [java.awt.image BufferedImage]
+           [java.awt Color]
+           [javax.imageio ImageIO]
+           [java.io File]))
 
 (defn parse-input [s]
   (->> (re-seq #"-?\d+" s)

@@ -1,5 +1,6 @@
-(require '[clojure.string :as str]
-         '[clojure.set :as set])
+(ns mmxxiv.xxiii
+  (:require [clojure.string :as str]
+            [clojure.set :as set]))
 
 (defn parse-graph [input]
   (transduce (comp (map #(str/split % #"-")) (map (fn [[a b]] {a #{b} b #{a}})))

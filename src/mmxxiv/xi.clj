@@ -1,5 +1,6 @@
-(require '[clojure.string :as str]
-         '[clojure.math :as math])
+(ns mmxxiv.xi
+  (:require [clojure.string :as str]
+            [clojure.math :as math]))
 
 (defn split-number [n]
   (let [len (count (str n))

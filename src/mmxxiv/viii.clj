@@ -1,6 +1,7 @@
-(require '[clojure.string :as str]
-         '[clojure.set :as set]
-         '[clojure.math.combinatorics :as combo])
+(ns mmxxiv.viii
+  (:require [clojure.string :as str]
+            [clojure.set :as set]
+            [clojure.math.combinatorics :as combo]))
 
 (defn within-grid? [[x y] width height]
   (and (<= 0 x (dec width))

@@ -1,3 +1,5 @@
+(ns mmxxiv.ix)
+
 (defn create-disk-map [map-str]
   (loop [digits (seq map-str)
          is-file true

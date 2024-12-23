@@ -1,6 +1,7 @@
-(require '[clojure.string :as str]
-         '[clojure.data.priority-map :refer [priority-map]]
-         '[clojure.set :as set])
+(ns mmxxiv.xvi
+  (:require [clojure.string :as str]
+            [clojure.data.priority-map :refer [priority-map]]
+            [clojure.set :as set]))
 
 (defn find-marker [grid marker]
   (first (for [y (range (count grid))

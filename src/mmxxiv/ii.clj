@@ -1,4 +1,5 @@
-(require '[clojure.string :as str])
+(ns mmxxiv.ii
+  (:require [clojure.string :as str]))
 
 (defn valid-diffs? [diffs]
   (and (or (every? pos? diffs) (every? neg? diffs))
@@ -16,5 +17,5 @@
 (let
  [data (->> (slurp "inputs/2024/2.txt")
             str/split-lines
-            (mapv #(mapv parse-long (str/split % #"\s+"))))]
-  [(count (filter valid-seq? data)) (count (filter with-removal? data))]) ; [526 566]
+            (mapv #(mapv parse-long (str/split % #"\s+"))))
+  [(count (filter valid-seq? data)) (count (filter with-removal? data))]]) ; [526 566]

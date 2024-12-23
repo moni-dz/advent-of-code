@@ -1,4 +1,5 @@
-(require '[clojure.string :as str])
+(ns mmxxiv.iv
+  (:require [clojure.string :as str]))
 
 (defn char-at [grid x y]
   (when (and (>= x 0) (>= y 0)
