@@ -8,35 +8,18 @@
         div (long (math/pow 10 (- len half)))]
     [(quot n div) (rem n div)]))
 
-(def transform-stone
-  (memoize
-   (fn [n]
-     (cond
-       (zero? n) [1]
-       (even? (count (str n))) (split-number n)
-       :else [(* n 2024)]))))
+(def transform
+  (memoize #(cond (zero? %) [1]
+                  (even? (count (str %))) (split-number %)
+                  :else [(* % 2024)])))
 
-(defn transform-stones [stones]
-  (reduce-kv
-   (fn [acc n count]
-     (reduce (fn [m new-n]
-               (update m new-n (fnil + 0) count))
-             acc
-             (transform-stone n)))
-   {}
-   stones))
+(defn transforms [stones]
+  (let [stone (mapcat (fn [[n count]] (map #(vector % count) (transform n))))]
+    (transduce stone (fn ([] {}) ([m] m) ([m [k v]] (update m k (fnil + 0) v))) stones)))
 
-(defn count-stones [stones n]
-  (->> stones
-       frequencies
-       (iterate transform-stones)
-       (drop n)
-       first
-       vals
-       (reduce +)))
+(defn stones [stones n]
+  (transduce (comp (drop n) (take 1) (mapcat vals)) + 0
+             (->> stones frequencies (iterate transforms))))
 
-(let [data (-> (slurp "inputs/2024/11.txt")
-               (str/split #"\s+")
-               (as-> nums (mapv parse-long nums)))]
-  [(time (count-stones data 25))
-   (time (count-stones data 75))])
+(let [data (mapv parse-long (str/split (slurp "inputs/2024/11.txt") #"\s+"))]
+  (mapv #(time (stones data %)) [25 75]))
