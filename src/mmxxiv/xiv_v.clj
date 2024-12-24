@@ -1,4 +1,4 @@
-(ns mmxxiv.xiv.v
+(ns mmxxiv.xiv-v
   (:import [java.awt.image BufferedImage]
            [java.awt Color]
            [javax.imageio ImageIO]
