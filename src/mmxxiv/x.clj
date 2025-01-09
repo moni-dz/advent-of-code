@@ -1,12 +1,12 @@
 (ns mmxxiv.x
-  (:require [clojure.string :as str]))
+  (:require [clojure.string :as str]
+            [lib.core :as lib]))
 
 (defn is-peak? [height] (= height 9))
 
 (defn get-cell [grid y x]
-  (when (and (<= 0 y (dec (count grid)))
-             (<= 0 x (dec (count (first grid)))))
-    (- (int (get-in grid [y x])) 48)))
+  (when (lib/in-bounds? [x y] grid true)
+    (- (int (lib/char-at grid [x y])) 48)))
 
 (defn find-trailheads [grid]
   (for [y (range (count grid))

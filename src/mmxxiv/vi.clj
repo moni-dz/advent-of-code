@@ -1,5 +1,6 @@
 (ns mmxxiv.vi
-  (:require [clojure.string :as str])
+  (:require [clojure.string :as str]
+            [lib.core :as lib])
   (:import [java.util BitSet]))
 
 (def directions {\^ [0 -1], \v [0 1], \< [-1 0], \> [1 0]})
@@ -31,9 +32,6 @@
      :pos [x y]
      :dir (directions dir)}))
 
-(defn in-bounds? [{:keys [height width]} [x y]]
-  (and (>= x 0) (< x width) (>= y 0) (< y height)))
-
 (defn blocked? [{:keys [grid]} [x y]]
   (= \# (get-in grid [y x])))
 
@@ -43,7 +41,7 @@
 (defn move [{:keys [pos dir] :as state}]
   (let [next-pos (get-next-position pos dir)]
     (cond
-      (not (in-bounds? state next-pos)) (assoc state :pos next-pos :dir dir :leaving true)
+      (not (lib/in-bounds? next-pos [pos dir])) (assoc state :pos next-pos :dir dir :leaving true)
       (blocked? state next-pos) (assoc state :dir (turn-right dir))
       :else (assoc state :pos next-pos))))
 

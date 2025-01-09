@@ -1,18 +1,13 @@
 (ns mmxxiv.iv
-  (:require [clojure.string :as str]))
-
-(defn char-at [grid x y]
-  (when (and (>= x 0) (>= y 0)
-             (< y (count grid))
-             (< x (count (first grid))))
-    (get-in grid [y x])))
+  (:require [clojure.string :as str]
+            [lib.core :as lib]))
 
 (def directions [[0 1] [1 0] [1 1] [1 -1] [0 -1] [-1 0] [-1 -1] [-1 1]])
 
 (defn matches-word? [grid x y [dx dy]]
-  (when (= (char-at grid x y) \X)
+  (when (= (lib/char-at grid [x y]) \X)
     (every? #(= (nth "XMAS" %)
-                (or (char-at grid (+ x (* % dx)) (+ y (* % dy))) \.))
+                (or (lib/char-at grid [(+ x (* % dx)) (+ y (* % dy))]) \.))
             (range 1 4))))
 
 (defn count-xmas [grid]
@@ -29,13 +24,13 @@
 (defn x-pattern? [grid row col]
   (when (and (>= row 1) (< row (dec (count grid)))
              (>= col 1) (< col (dec (count (first grid))))
-             (= (char-at grid row col) \A))
-    (and (mas-patterns [(or (char-at grid (dec row) (dec col)) \.)
+             (= (lib/char-at grid [row col]) \A))
+    (and (mas-patterns [(or (lib/char-at grid [(dec row) (dec col)]) \.)
                         \A
-                        (or (char-at grid (inc row) (inc col)) \.)])
-         (mas-patterns [(or (char-at grid (dec row) (inc col)) \.)
+                        (or (lib/char-at grid [(inc row) (inc col)]) \.)])
+         (mas-patterns [(or (lib/char-at grid [(dec row) (inc col)]) \.)
                         \A
-                        (or (char-at grid (inc row) (dec col)) \.)]))))
+                        (or (lib/char-at grid [(inc row) (dec col)]) \.)]))))
 
 (defn count-x-mas [grid]
   (->> (for [x (range (count (first grid)))

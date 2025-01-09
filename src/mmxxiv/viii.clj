@@ -1,23 +1,17 @@
 (ns mmxxiv.viii
   (:require [clojure.string :as str]
             [clojure.set :as set]
-            [clojure.math.combinatorics :as combo]))
-
-(defn within-grid? [[x y] width height]
-  (and (<= 0 x (dec width))
-       (<= 0 y (dec height))))
+            [clojure.math.combinatorics :as combo]
+            [lib.core :as lib]))
 
 (defn parse-input [input]
   (let [lines (str/split-lines input)
         height (count lines)
         width (count (first lines))
-        antennae (for [[y line] (map-indexed vector lines)
-                       [x char] (map-indexed vector line)
-                       :when (not= char \.)]
-                   [[x y] char])]
-    {:antennae antennae
-     :width width
-     :height height}))
+        antennae (for [[y l] (map-indexed vector lines) [x c] (map-indexed vector l)
+                       :when (not= c \.)]
+                   [[x y] c])]
+    {:antennae antennae :width width :height height}))
 
 (defn line-points [[x1 y1] [x2 y2] width height]
   (let [dx (- x2 x1)
@@ -27,7 +21,7 @@
                   (.gcd (biginteger dx) (biginteger dy)))
         step [(quot dx gcd-val) (quot dy gcd-val)]
         xf (comp
-            (take-while #(within-grid? % width height))
+            (take-while #(lib/in-bounds? % [width height]))
             (map vec))]
     (if (= [x1 y1] [x2 y2])
       #{[x1 y1]}
@@ -47,14 +41,14 @@
                              :let [[x1 y1] p1
                                    [x2 y2] p2
                                    mirror [(- (* 2 x2) x1) (- (* 2 y2) y1)]]
-                             :when (within-grid? mirror width height)]
+                             :when (lib/in-bounds? mirror [width height])]
                          mirror)))
 
                 :line
                 (->> (combo/combinations group 2)
                      (mapcat (fn [[[pos1 _] [pos2 _]]]
                                (line-points pos1 pos2 width height)))
-                     (filter #(within-grid? % width height))))))
+                     (filter #(lib/in-bounds? % [width height]))))))
        (apply concat)
        set
        count))

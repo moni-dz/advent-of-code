@@ -1,20 +1,15 @@
 (ns mmxxiv.xviii
   (:require [clojure.string :as str]
-            [clojure.data.priority-map :refer [priority-map]]))
+            [clojure.data.priority-map :refer [priority-map]]
+            [lib.core :as lib]))
 
 (defn parse-input [input]
   (->> input str/split-lines (map (comp #(mapv parse-long %) #(str/split % #",")))))
 
-(def manhattan-dist
-  (memoize (fn [pos end] (reduce + (map (comp abs -) pos end)))))
-
-(defn in-bounds? [[x y] grid-size]
-  (and (<= 0 x (dec grid-size)) (<= 0 y (dec grid-size))))
-
 (defn neighbors [[x y] grid-size]
   (for [[dx dy] [[0 1] [1 0] [0 -1] [-1 0]]
         :let [nx (+ x dx) ny (+ y dy)]
-        :when (in-bounds? [nx ny] grid-size)]
+        :when (lib/in-bounds? [nx ny] grid-size)]
     [nx ny]))
 
 (defn should-update? [costs node current-cost]
@@ -25,7 +20,7 @@
   (let [cost (inc current-cost)]
     (if (should-update? (:costs state) node current-cost)
       (-> state
-          (update :frontier assoc node (+ cost (manhattan-dist node end)))
+          (update :frontier assoc node (+ cost (lib/manhattan node end)))
           (update :costs assoc node cost)
           (update :predecessors assoc node current))
       state)))
@@ -43,7 +38,7 @@
 
 (defn a* [start end grid-size corrupted]
   (loop [{:keys [frontier visited predecessors costs]}
-         {:frontier (priority-map start (manhattan-dist start end))
+         {:frontier (priority-map start (lib/manhattan start end))
           :visited (transient #{})
           :predecessors {}
           :costs {start 0}}]

@@ -15,3 +15,20 @@
               (dotimes [_ step] (.removeFirst a))
               (rf result v))
             result)))))))
+
+(def manhattan
+  (memoize #(reduce + (map (comp abs -) % %))))
+
+(defn in-bounds?
+  ([[x y] [mx my]] (and (<= 0 x (dec mx)) (<= 0 y (dec my))))
+  ([[x y] grid is-coll?]
+   (and
+    is-coll?
+    (<= 0 y (dec (count grid)))
+    (<= 0 x (dec (count (first grid)))))))
+
+(defn char-at [grid [x y]]
+  (when (and (>= x 0) (>= y 0)
+             (< y (count grid))
+             (< x (count (first grid))))
+    (get-in grid [y x])))
