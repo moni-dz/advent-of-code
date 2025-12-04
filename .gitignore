@@ -1,0 +1,5 @@
+/target
+/inputs
+flamegraph.svg
+cargo-flamegraph.trace
+profile.json.gz

@@ -1,0 +1,22 @@
+[package]
+name = "advent-of-code"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+mimalloc = "0.1"
+num-complex = "0.4"
+prettytable-rs = "0.10"
+rayon = "1.10"
+
+[[bin]]
+name = "aoc"
+path = "src/main.rs"
+
+[[bin]]
+name = "profile"
+path = "src/bin/profile.rs"
+
+[profile.profiling]
+inherits = "release"
+debug = true
