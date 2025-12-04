@@ -1,5 +1,6 @@
 use crate::runner::Solution;
 use num_complex::Complex;
+use std::collections::VecDeque;
 
 type Pos = Complex<i32>;
 
@@ -67,7 +68,7 @@ impl Solution<4> for PrintingDepartment {
     fn parse(&mut self, input: &str) {
         let lines: Vec<&[u8]> = input.lines().map(|l| l.as_bytes()).collect();
         let rows = lines.len();
-        let cols = if rows > 0 { lines[0].len() } else { 0 };
+        let cols = lines[0].len();
 
         let grid = Grid::new(rows, cols);
         let size = grid.size();
@@ -106,24 +107,18 @@ impl Solution<4> for PrintingDepartment {
         let mut is_roll = self.is_roll.clone();
         let mut neighbors = self.neighbors.clone();
 
-        let mut in_q = vec![false; size];
-        let mut q: Vec<Pos> = Vec::with_capacity(size);
+        let mut q: VecDeque<Pos> = VecDeque::with_capacity(size);
 
         for idx in 0..size {
             if is_roll[idx] && neighbors[idx] < 4 {
-                q.push(grid.pos(idx));
-                in_q[idx] = true;
+                q.push_back(grid.pos(idx));
             }
         }
 
         let mut removed = 0;
-        let mut head = 0;
 
-        while head < q.len() {
-            let pos = q[head];
+        while let Some(pos) = q.pop_front() {
             let idx = grid.idx(pos);
-            head += 1;
-            in_q[idx] = false;
 
             if !is_roll[idx] || neighbors[idx] >= 4 {
                 continue;
@@ -134,11 +129,12 @@ impl Solution<4> for PrintingDepartment {
 
             for neighbor in grid.neighbors(pos) {
                 let n_idx = grid.idx(neighbor);
+
                 if is_roll[n_idx] {
                     neighbors[n_idx] -= 1;
-                    if neighbors[n_idx] < 4 && !in_q[n_idx] {
-                        q.push(neighbor);
-                        in_q[n_idx] = true;
+
+                    if neighbors[n_idx] < 4 {
+                        q.push_back(neighbor);
                     }
                 }
             }
