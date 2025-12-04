@@ -55,28 +55,55 @@ macro_rules! input {
     };
 }
 
-pub fn run_with_input<const DAY: u32, S: Solution<DAY>>(
+const WARMUP: u32 = 100;
+const BENCHES: u32 = 1000;
+
+pub fn run_with_input<const DAY: u32, S: Solution<DAY> + Default>(
     solution: &mut S,
     input: &str,
 ) -> RunResult {
-    let parse_start = Instant::now();
+    for _ in 0..WARMUP {
+        *solution = S::default();
+        solution.parse(input);
+        std::hint::black_box(solution.p1());
+        std::hint::black_box(solution.p2());
+    }
+
+    let mut parse_min = u128::MAX;
+    for _ in 0..BENCHES {
+        *solution = S::default();
+        let start = Instant::now();
+        solution.parse(input);
+        parse_min = parse_min.min(start.elapsed().as_nanos());
+    }
+
+    *solution = S::default();
     solution.parse(input);
-    let parse_us = parse_start.elapsed().as_micros();
 
-    let p1_start = Instant::now();
-    let p1_result = solution.p1();
-    let p1_us = p1_start.elapsed().as_micros();
+    let mut p1_min = u128::MAX;
+    let mut p1_result = String::new();
+    for _ in 0..BENCHES {
+        let start = Instant::now();
+        p1_result = solution.p1();
+        p1_min = p1_min.min(start.elapsed().as_nanos());
+        std::hint::black_box(&p1_result);
+    }
 
-    let p2_start = Instant::now();
-    let p2_result = solution.p2();
-    let p2_us = p2_start.elapsed().as_micros();
+    let mut p2_min = u128::MAX;
+    let mut p2_result = String::new();
+    for _ in 0..BENCHES {
+        let start = Instant::now();
+        p2_result = solution.p2();
+        p2_min = p2_min.min(start.elapsed().as_nanos());
+        std::hint::black_box(&p2_result);
+    }
 
     RunResult {
         day: DAY,
-        parse_us,
+        parse_us: (parse_min + 500) / 1000,
         p1_result,
-        p1_us,
+        p1_us: (p1_min + 500) / 1000,
         p2_result,
-        p2_us,
+        p2_us: (p2_min + 500) / 1000,
     }
 }
