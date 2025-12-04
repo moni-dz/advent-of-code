@@ -1,3 +1,5 @@
+#![feature(portable_simd)]
+
 use advent_of_code::days::{d1::SecretEntrance, d2::GiftShop, d3::Lobby, d4::PrintingDepartment};
 
 use advent_of_code::input;

@@ -1,4 +1,5 @@
 use crate::runner::Solution;
+use arrayvec::ArrayVec;
 
 #[derive(Clone, Copy)]
 struct Command {
@@ -7,35 +8,48 @@ struct Command {
 }
 
 impl Command {
-    fn parse(s: &[u8]) -> Self {
-        let direction = if s[0] == b'R' { 1 } else { -1 };
-        let distance = s[1..]
-            .iter()
-            .fold(0i32, |acc, &b| acc * 10 + (b - b'0') as i32);
-        Self {
-            distance,
-            direction,
-        }
-    }
-
     fn turn(&self) -> i32 {
         self.direction * self.distance
     }
 }
 
-#[derive(Default)]
 pub struct SecretEntrance {
-    commands: Vec<Command>,
+    commands: ArrayVec<Command, 4096>,
+}
+
+impl Default for SecretEntrance {
+    fn default() -> Self {
+        Self {
+            commands: ArrayVec::new(),
+        }
+    }
 }
 
 impl Solution<1> for SecretEntrance {
     fn parse(&mut self, input: &str) {
-        self.commands = input
-            .as_bytes()
-            .split(|&b| b == b'\n' || b == b'\r')
-            .filter(|line| !line.is_empty())
-            .map(Command::parse)
-            .collect();
+        let bytes = input.as_bytes();
+        self.commands.clear();
+
+        let mut i = 0;
+        while i < bytes.len() {
+            let direction = if bytes[i] == b'R' { 1 } else { -1 };
+            i += 1;
+
+            let mut distance = 0i32;
+            while i < bytes.len() && bytes[i] >= b'0' && bytes[i] <= b'9' {
+                distance = distance * 10 + (bytes[i] - b'0') as i32;
+                i += 1;
+            }
+
+            self.commands.push(Command {
+                distance,
+                direction,
+            });
+
+            while i < bytes.len() && (bytes[i] == b'\n' || bytes[i] == b'\r') {
+                i += 1;
+            }
+        }
     }
 
     fn p1(&self) -> String {
