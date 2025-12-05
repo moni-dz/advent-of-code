@@ -39,45 +39,54 @@ fn invalids_for_range<const PART: u8>((range_b, range_e): Interval) -> u64 {
     let len_b = count_digits(range_b);
     let len_e = count_digits(range_e);
 
-    let mut invalid_ids: Vec<u64> = (len_b..=len_e)
-        .filter(|&len| PART != 1 || len % 2 == 0)
-        .flat_map(|len| {
-            let sub_b = if len == len_b {
-                range_b
-            } else {
-                10u64.pow(len - 1)
-            };
-            let sub_e = if len == len_e {
-                range_e
-            } else {
-                10u64.pow(len) - 1
-            };
+    let mut invalid_ids: Vec<u64> = Vec::new();
+    
+    for len in len_b..=len_e {
+        if PART == 1 && len % 2 != 0 {
+            continue;
+        }
 
-            if PART == 1 {
-                let half_len = len / 2;
-                let half_b = get_prefix(sub_b, half_len);
-                let half_e = get_prefix(sub_e, half_len);
-                let multiplier = 10u64.pow(half_len);
+        let sub_b = if len == len_b {
+            range_b
+        } else {
+            10u64.pow(len - 1)
+        };
+        let sub_e = if len == len_e {
+            range_e
+        } else {
+            10u64.pow(len) - 1
+        };
 
-                (half_b..=half_e)
-                    .map(|half| half * multiplier + half)
-                    .filter(|&repeated| repeated >= sub_b && repeated <= sub_e)
-                    .collect::<Vec<_>>()
-            } else {
-                (1..len)
-                    .filter(|&pl| len % pl == 0)
-                    .flat_map(|pattern_len| {
-                        let pattern_b = get_prefix(sub_b, pattern_len);
-                        let pattern_e = get_prefix(sub_e, pattern_len);
+        if PART == 1 {
+            let half_len = len / 2;
+            let half_b = get_prefix(sub_b, half_len);
+            let half_e = get_prefix(sub_e, half_len);
+            let multiplier = 10u64.pow(half_len);
 
-                        (pattern_b..=pattern_e)
-                            .map(move |pattern| repeat_pattern(pattern, pattern_len, len))
-                            .filter(|&repeated| repeated >= sub_b && repeated <= sub_e)
-                    })
-                    .collect::<Vec<_>>()
+            for half in half_b..=half_e {
+                let repeated = half * multiplier + half;
+                if repeated >= sub_b && repeated <= sub_e {
+                    invalid_ids.push(repeated);
+                }
             }
-        })
-        .collect();
+        } else {
+            for pattern_len in 1..len {
+                if len % pattern_len != 0 {
+                    continue;
+                }
+                
+                let pattern_b = get_prefix(sub_b, pattern_len);
+                let pattern_e = get_prefix(sub_e, pattern_len);
+
+                for pattern in pattern_b..=pattern_e {
+                    let repeated = repeat_pattern(pattern, pattern_len, len);
+                    if repeated >= sub_b && repeated <= sub_e {
+                        invalid_ids.push(repeated);
+                    }
+                }
+            }
+        }
+    }
 
     invalid_ids.sort_unstable();
     invalid_ids.dedup();
