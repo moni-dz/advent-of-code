@@ -69,7 +69,13 @@ fn max_joltage<const N: usize>(bytes: &[u8]) -> u64 {
             max_digit
         } else {
             // SAFETY: first_pos + 1 < len
-            *unsafe { bytes.get_unchecked(first_pos + 1..).iter().max().unwrap_unchecked() }
+            *unsafe {
+                bytes
+                    .get_unchecked(first_pos + 1..)
+                    .iter()
+                    .max()
+                    .unwrap_unchecked()
+            }
         };
 
         (first - b'0') as u64 * 10 + (second - b'0') as u64
@@ -146,8 +152,6 @@ impl Solution<3> for Lobby {
             .iter()
             .position(|&b| b == b'\n' || b == b'\r')
             .unwrap_or(bytes.len());
-
-        debug_assert!(self.width > 0);
 
         self.data = bytes
             .iter()
