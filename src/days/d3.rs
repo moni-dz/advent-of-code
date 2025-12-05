@@ -16,8 +16,9 @@ fn max_joltage<const N: usize>(bytes: &[u8]) -> u64 {
             let mut max_pos = 0usize;
             let mut i = 0;
 
-            while i + 32 <= len - 1 {
-                let chunk: u8x32 = Simd::from_slice(&bytes[i..i + 32]);
+            while i + 32 < len {
+                // SAFETY: we already did the bounds checking for this
+                let chunk: u8x32 = Simd::from_slice(unsafe { bytes.get_unchecked(i..i + 32) });
                 let chunk_max = chunk.reduce_max();
 
                 if chunk_max > max_digit {
@@ -39,11 +40,14 @@ fn max_joltage<const N: usize>(bytes: &[u8]) -> u64 {
 
             (max_digit, max_pos)
         } else {
-            let (pos, val) = bytes[..len - 1]
-                .iter()
-                .enumerate()
-                .max_by_key(|(_, v)| *v)
-                .unwrap();
+            // SAFETY: len > 1 for N == 2
+            let (pos, val) = unsafe {
+                bytes[..len - 1]
+                    .iter()
+                    .enumerate()
+                    .max_by_key(|(_, v)| *v)
+                    .unwrap_unchecked()
+            };
 
             (*val, pos)
         };
@@ -53,7 +57,7 @@ fn max_joltage<const N: usize>(bytes: &[u8]) -> u64 {
             let mut i = first_pos + 1;
 
             while i + 32 <= len {
-                let chunk: u8x32 = Simd::from_slice(&bytes[i..i + 32]);
+                let chunk: u8x32 = Simd::from_slice(unsafe { bytes.get_unchecked(i..i + 32) });
                 max_digit = max_digit.max(chunk.reduce_max());
                 i += 32;
             }
@@ -64,7 +68,8 @@ fn max_joltage<const N: usize>(bytes: &[u8]) -> u64 {
 
             max_digit
         } else {
-            *bytes[first_pos + 1..].iter().max().unwrap()
+            // SAFETY: first_pos + 1 < len
+            *unsafe { bytes.get_unchecked(first_pos + 1..).iter().max().unwrap_unchecked() }
         };
 
         (first - b'0') as u64 * 10 + (second - b'0') as u64
@@ -81,8 +86,9 @@ fn max_joltage<const N: usize>(bytes: &[u8]) -> u64 {
                 let mut max_pos = start;
                 let mut j = start;
 
-                while j + 32 <= end + 1 {
-                    let chunk: u8x32 = Simd::from_slice(&bytes[j..j + 32]);
+                while j + 32 < end {
+                    // SAFETY: we already did the bounds checking for this
+                    let chunk: u8x32 = Simd::from_slice(unsafe { bytes.get_unchecked(j..j + 32) });
                     let chunk_max = chunk.reduce_max();
 
                     if chunk_max > max_char {
@@ -96,7 +102,7 @@ fn max_joltage<const N: usize>(bytes: &[u8]) -> u64 {
                 }
 
                 for k in j..=end {
-                    // SAFETY: k is in range [j, end] and end < len
+                    // SAFETY: k is in range [start, end] and end < len
                     let b = unsafe { *bytes.get_unchecked(k) };
 
                     if b > max_char {
@@ -141,6 +147,8 @@ impl Solution<3> for Lobby {
             .position(|&b| b == b'\n' || b == b'\r')
             .unwrap_or(bytes.len());
 
+        debug_assert!(self.width > 0);
+
         self.data = bytes
             .iter()
             .filter(|&&b| b != b'\n' && b != b'\r')
@@ -150,7 +158,7 @@ impl Solution<3> for Lobby {
 
     fn p1(&self) -> String {
         self.data
-            .chunks(self.width)
+            .chunks_exact(self.width)
             .map(max_joltage::<2>)
             .sum::<u64>()
             .to_string()
@@ -158,7 +166,7 @@ impl Solution<3> for Lobby {
 
     fn p2(&self) -> String {
         self.data
-            .chunks(self.width)
+            .chunks_exact(self.width)
             .map(max_joltage::<12>)
             .sum::<u64>()
             .to_string()
