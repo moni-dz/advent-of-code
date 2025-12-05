@@ -8,14 +8,6 @@ struct BitSet {
     bits: Vec<u64>,
 }
 
-impl Clone for BitSet {
-    fn clone(&self) -> Self {
-        Self {
-            bits: self.bits.clone(),
-        }
-    }
-}
-
 impl Default for BitSet {
     fn default() -> Self {
         Self { bits: Vec::new() }
@@ -96,7 +88,7 @@ impl Grid {
 #[derive(Default)]
 pub struct PrintingDepartment {
     grid: Option<Grid>,
-    is_roll: BitSet,
+    is_roll: Vec<bool>,
     neighbors: Vec<u8>,
 }
 
@@ -109,21 +101,19 @@ impl Solution<4> for PrintingDepartment {
         let grid = Grid::new(rows, cols);
         let size = grid.size();
 
-        self.is_roll = BitSet::new(size);
+        self.is_roll = vec![false; size];
         for (r, line) in lines.iter().enumerate() {
             for (c, &b) in line.iter().enumerate() {
-                if b == b'@' {
-                    self.is_roll.set(grid.idx(Complex::new(r as i32, c as i32)));
-                }
+                self.is_roll[grid.idx(Complex::new(r as i32, c as i32))] = b == b'@';
             }
         }
 
         self.neighbors = vec![0; size];
         for idx in 0..size {
-            if self.is_roll.get(idx) {
+            if self.is_roll[idx] {
                 self.neighbors[idx] = grid
                     .neighbors(grid.pos(idx))
-                    .filter(|&n| self.is_roll.get(grid.idx(n)))
+                    .filter(|&n| self.is_roll[grid.idx(n)])
                     .count() as u8;
             }
         }
@@ -132,8 +122,8 @@ impl Solution<4> for PrintingDepartment {
     }
 
     fn p1(&self) -> String {
-        (0..self.grid.as_ref().unwrap().size())
-            .filter(|&idx| self.is_roll.get(idx) && self.neighbors[idx] < 4)
+        (0..self.is_roll.len())
+            .filter(|&idx| self.is_roll[idx] && self.neighbors[idx] < 4)
             .count()
             .to_string()
     }
@@ -149,7 +139,7 @@ impl Solution<4> for PrintingDepartment {
         let mut q: VecDeque<Pos> = VecDeque::with_capacity(size);
 
         for idx in 0..size {
-            if is_roll.get(idx) && neighbors[idx] < 4 {
+            if is_roll[idx] && neighbors[idx] < 4 {
                 q.push_back(grid.pos(idx));
                 visited.set(idx);
             }
@@ -160,17 +150,17 @@ impl Solution<4> for PrintingDepartment {
         while let Some(pos) = q.pop_front() {
             let idx = grid.idx(pos);
 
-            if !is_roll.get(idx) {
+            if !is_roll[idx] {
                 continue;
             }
 
-            is_roll.bits[idx / 64] &= !(1 << (idx % 64));
+            is_roll[idx] = false;
             removed += 1;
 
             for neighbor in grid.neighbors(pos) {
                 let n_idx = grid.idx(neighbor);
 
-                if is_roll.get(n_idx) {
+                if is_roll[n_idx] {
                     neighbors[n_idx] -= 1;
 
                     if neighbors[n_idx] < 4 && !visited.get(n_idx) {
