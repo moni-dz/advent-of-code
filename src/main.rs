@@ -1,5 +1,6 @@
 #![feature(portable_simd)]
 
+use advent_of_code::days::d5::Cafeteria;
 use prettytable::{Table, format, row};
 
 use advent_of_code::days::{d1::SecretEntrance, d2::GiftShop, d3::Lobby, d4::PrintingDepartment};
@@ -12,24 +13,20 @@ use mimalloc::MiMalloc;
 #[global_allocator]
 static GLOBAL: MiMalloc = MiMalloc;
 
+macro_rules! run {
+    ($solution_type:ty, $day_num:tt) => {{
+        let mut solution = <$solution_type>::default();
+        run_with_input(&mut solution, input!($day_num))
+    }};
+}
+
 fn main() {
     let mut results = vec![
-        {
-            let mut d1 = SecretEntrance::default();
-            run_with_input(&mut d1, input!(1))
-        },
-        {
-            let mut d2 = GiftShop::default();
-            run_with_input(&mut d2, input!(2))
-        },
-        {
-            let mut d3 = Lobby::default();
-            run_with_input(&mut d3, input!(3))
-        },
-        {
-            let mut d4 = PrintingDepartment::default();
-            run_with_input(&mut d4, input!(4))
-        },
+        run!(SecretEntrance, 1),
+        run!(GiftShop, 2),
+        run!(Lobby, 3),
+        run!(PrintingDepartment, 4),
+        run!(Cafeteria, 5),
     ];
 
     results.sort_by_key(|r| r.day);

@@ -1,6 +1,8 @@
 #![feature(portable_simd)]
 
-use advent_of_code::days::{d1::SecretEntrance, d2::GiftShop, d3::Lobby, d4::PrintingDepartment};
+use advent_of_code::days::{
+    d1::SecretEntrance, d2::GiftShop, d3::Lobby, d4::PrintingDepartment, d5::Cafeteria,
+};
 
 use advent_of_code::input;
 use advent_of_code::runner::Solution;
@@ -28,6 +30,7 @@ fn main() {
         2 => run_day::<2, GiftShop>(input!(2)),
         3 => run_day::<3, Lobby>(input!(3)),
         4 => run_day::<4, PrintingDepartment>(input!(4)),
+        5 => run_day::<5, Cafeteria>(input!(5)),
         _ => eprintln!("day {} unimplemented", day),
     }
 }
