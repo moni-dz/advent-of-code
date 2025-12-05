@@ -132,7 +132,7 @@ impl Solution<4> for PrintingDepartment {
     }
 
     fn p1(&self) -> String {
-        (0..self.is_roll.bits.len() * 64)
+        (0..self.grid.as_ref().unwrap().size())
             .filter(|&idx| self.is_roll.get(idx) && self.neighbors[idx] < 4)
             .count()
             .to_string()
