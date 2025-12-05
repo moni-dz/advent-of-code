@@ -40,7 +40,7 @@ fn invalids_for_range<const PART: u8>((range_b, range_e): Interval) -> u64 {
     let len_e = count_digits(range_e);
 
     let mut invalid_ids: Vec<u64> = Vec::new();
-    
+
     for len in len_b..=len_e {
         if PART == 1 && len % 2 != 0 {
             continue;
@@ -74,7 +74,7 @@ fn invalids_for_range<const PART: u8>((range_b, range_e): Interval) -> u64 {
                 if len % pattern_len != 0 {
                     continue;
                 }
-                
+
                 let pattern_b = get_prefix(sub_b, pattern_len);
                 let pattern_e = get_prefix(sub_e, pattern_len);
 
