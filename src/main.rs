@@ -1,6 +1,7 @@
 #![feature(portable_simd)]
 
 use advent_of_code::days::d5::Cafeteria;
+use advent_of_code::days::d6::TrashCompactor;
 use prettytable::{Table, format, row};
 
 use advent_of_code::days::{d1::SecretEntrance, d2::GiftShop, d3::Lobby, d4::PrintingDepartment};
@@ -27,6 +28,7 @@ fn main() {
         run!(Lobby, 3),
         run!(PrintingDepartment, 4),
         run!(Cafeteria, 5),
+        run!(TrashCompactor, 6),
     ];
 
     results.sort_by_key(|r| r.day);

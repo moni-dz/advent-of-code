@@ -1,5 +1,5 @@
 use crate::runner::Solution;
-use std::simd::{Simd, cmp::SimdPartialEq, num::SimdUint, u8x32, u8x4};
+use std::simd::{Simd, cmp::SimdPartialEq, num::SimdUint, u8x4, u8x32};
 
 #[cfg(any(target_feature = "avx512bw", target_feature = "avx512vl"))]
 use std::simd::u8x64;
@@ -7,7 +7,8 @@ use std::simd::u8x64;
 macro_rules! chunk_max {
     ($bytes:expr, $j:expr, $end:expr, $size:expr, $simd_type:ty, $max_char:expr, $max_pos:expr) => {
         while $j + $size <= $end {
-            let chunk: $simd_type = Simd::from_slice(unsafe { $bytes.get_unchecked($j..$j + $size) });
+            let chunk: $simd_type =
+                Simd::from_slice(unsafe { $bytes.get_unchecked($j..$j + $size) });
             let chunk_max = chunk.reduce_max();
 
             if chunk_max > $max_char {
@@ -71,7 +72,8 @@ fn max_joltage<const N: usize>(bytes: &[u8]) -> u64 {
         let (first, first_pos) = find_max_digit!(bytes, len, 0, len - 2);
 
         let second = {
-            let (max_digit, _) = find_max_digit!(bytes, len - first_pos - 1, first_pos + 1, len - 1);
+            let (max_digit, _) =
+                find_max_digit!(bytes, len - first_pos - 1, first_pos + 1, len - 1);
             max_digit
         };
 

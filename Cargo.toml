@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 arrayvec = "0.7"
+memchr = "2.7"
 mimalloc = "0.1"
 num-complex = "0.4"
 prettytable-rs = "0.10"
