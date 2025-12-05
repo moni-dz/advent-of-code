@@ -4,6 +4,42 @@ use std::collections::VecDeque;
 
 type Pos = Complex<i32>;
 
+struct BitSet {
+    bits: Vec<u64>,
+}
+
+impl Clone for BitSet {
+    fn clone(&self) -> Self {
+        Self {
+            bits: self.bits.clone(),
+        }
+    }
+}
+
+impl Default for BitSet {
+    fn default() -> Self {
+        Self { bits: Vec::new() }
+    }
+}
+
+impl BitSet {
+    fn new(size: usize) -> Self {
+        Self {
+            bits: vec![0; (size + 63) / 64],
+        }
+    }
+
+    #[inline]
+    fn set(&mut self, idx: usize) {
+        self.bits[idx / 64] |= 1 << (idx % 64);
+    }
+
+    #[inline]
+    fn get(&self, idx: usize) -> bool {
+        (self.bits[idx / 64] >> (idx % 64)) & 1 != 0
+    }
+}
+
 const DIRECTIONS: [Pos; 8] = [
     Complex::new(-1, -1),
     Complex::new(-1, 0),
@@ -60,7 +96,7 @@ impl Grid {
 #[derive(Default)]
 pub struct PrintingDepartment {
     grid: Option<Grid>,
-    is_roll: Vec<bool>,
+    is_roll: BitSet,
     neighbors: Vec<u8>,
 }
 
@@ -73,19 +109,21 @@ impl Solution<4> for PrintingDepartment {
         let grid = Grid::new(rows, cols);
         let size = grid.size();
 
-        self.is_roll = vec![false; size];
+        self.is_roll = BitSet::new(size);
         for (r, line) in lines.iter().enumerate() {
             for (c, &b) in line.iter().enumerate() {
-                self.is_roll[grid.idx(Complex::new(r as i32, c as i32))] = b == b'@';
+                if b == b'@' {
+                    self.is_roll.set(grid.idx(Complex::new(r as i32, c as i32)));
+                }
             }
         }
 
         self.neighbors = vec![0; size];
         for idx in 0..size {
-            if self.is_roll[idx] {
+            if self.is_roll.get(idx) {
                 self.neighbors[idx] = grid
                     .neighbors(grid.pos(idx))
-                    .filter(|&n| self.is_roll[grid.idx(n)])
+                    .filter(|&n| self.is_roll.get(grid.idx(n)))
                     .count() as u8;
             }
         }
@@ -94,8 +132,8 @@ impl Solution<4> for PrintingDepartment {
     }
 
     fn p1(&self) -> String {
-        (0..self.is_roll.len())
-            .filter(|&idx| self.is_roll[idx] && self.neighbors[idx] < 4)
+        (0..self.is_roll.bits.len() * 64)
+            .filter(|&idx| self.is_roll.get(idx) && self.neighbors[idx] < 4)
             .count()
             .to_string()
     }
@@ -106,12 +144,14 @@ impl Solution<4> for PrintingDepartment {
 
         let mut is_roll = self.is_roll.clone();
         let mut neighbors = self.neighbors.clone();
+        let mut visited = BitSet::new(size);
 
         let mut q: VecDeque<Pos> = VecDeque::with_capacity(size);
 
         for idx in 0..size {
-            if is_roll[idx] && neighbors[idx] < 4 {
+            if is_roll.get(idx) && neighbors[idx] < 4 {
                 q.push_back(grid.pos(idx));
+                visited.set(idx);
             }
         }
 
@@ -120,20 +160,21 @@ impl Solution<4> for PrintingDepartment {
         while let Some(pos) = q.pop_front() {
             let idx = grid.idx(pos);
 
-            if !is_roll[idx] || neighbors[idx] >= 4 {
+            if !is_roll.get(idx) {
                 continue;
             }
 
-            is_roll[idx] = false;
+            is_roll.bits[idx / 64] &= !(1 << (idx % 64));
             removed += 1;
 
             for neighbor in grid.neighbors(pos) {
                 let n_idx = grid.idx(neighbor);
 
-                if is_roll[n_idx] {
+                if is_roll.get(n_idx) {
                     neighbors[n_idx] -= 1;
 
-                    if neighbors[n_idx] < 4 {
+                    if neighbors[n_idx] < 4 && !visited.get(n_idx) {
+                        visited.set(n_idx);
                         q.push_back(neighbor);
                     }
                 }
