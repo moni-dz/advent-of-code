@@ -16,9 +16,7 @@ impl Default for BitSet {
 
 impl BitSet {
     fn new(size: usize) -> Self {
-        Self {
-            bits: vec![0; (size + 63) / 64],
-        }
+        Self { bits: vec![0; (size + 63) / 64] }
     }
 
     #[inline]
@@ -78,10 +76,7 @@ impl Grid {
 
     #[inline]
     fn neighbors(&self, pos: Pos) -> impl Iterator<Item = Pos> + '_ {
-        DIRECTIONS
-            .iter()
-            .map(move |&d| pos + d)
-            .filter(|&n| self.contains(n))
+        DIRECTIONS.iter().map(move |&d| pos + d).filter(|&n| self.contains(n))
     }
 }
 
@@ -111,10 +106,7 @@ impl Solution<4> for PrintingDepartment {
         self.neighbors = vec![0; size];
         for idx in 0..size {
             if self.is_roll[idx] {
-                self.neighbors[idx] = grid
-                    .neighbors(grid.pos(idx))
-                    .filter(|&n| self.is_roll[grid.idx(n)])
-                    .count() as u8;
+                self.neighbors[idx] = grid.neighbors(grid.pos(idx)).filter(|&n| self.is_roll[grid.idx(n)]).count() as u8;
             }
         }
 
@@ -122,10 +114,7 @@ impl Solution<4> for PrintingDepartment {
     }
 
     fn p1(&self) -> String {
-        (0..self.is_roll.len())
-            .filter(|&idx| self.is_roll[idx] && self.neighbors[idx] < 4)
-            .count()
-            .to_string()
+        (0..self.is_roll.len()).filter(|&idx| self.is_roll[idx] && self.neighbors[idx] < 4).count().to_string()
     }
 
     fn p2(&self) -> String {

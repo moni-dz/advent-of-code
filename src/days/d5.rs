@@ -10,11 +10,7 @@ impl Solution<5> for Cafeteria {
     fn parse(&mut self, input: &str) {
         let (ranges_str, ids_str) = input.split_once("\n\n").unwrap();
 
-        self.ids = ids_str
-            .lines()
-            .filter(|line| !line.is_empty())
-            .map(|line| line.parse().unwrap())
-            .collect();
+        self.ids = ids_str.lines().filter(|line| !line.is_empty()).map(|line| line.parse().unwrap()).collect();
 
         self.ids.sort_unstable();
 
@@ -42,21 +38,15 @@ impl Solution<5> for Cafeteria {
     fn p1(&self) -> String {
         self.ids
             .iter()
-            .filter(
-                |id| match self.merged.binary_search_by_key(*id, |(start, _)| *start) {
-                    Ok(_) => true,
-                    Err(pos) => pos > 0 && *id <= &self.merged[pos - 1].1,
-                },
-            )
+            .filter(|id| match self.merged.binary_search_by_key(*id, |(start, _)| *start) {
+                Ok(_) => true,
+                Err(pos) => pos > 0 && *id <= &self.merged[pos - 1].1,
+            })
             .count()
             .to_string()
     }
 
     fn p2(&self) -> String {
-        self.merged
-            .iter()
-            .map(|(start, end)| end - start + 1)
-            .sum::<u64>()
-            .to_string()
+        self.merged.iter().map(|(start, end)| end - start + 1).sum::<u64>().to_string()
     }
 }

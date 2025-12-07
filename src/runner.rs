@@ -4,6 +4,7 @@ pub trait Solution<const DAY: u32>: Send {
     fn parse(&mut self, input: &str);
     fn p1(&self) -> String;
     fn p2(&self) -> String;
+    fn prebench(&mut self) {}
 }
 
 pub struct RunResult {
@@ -58,10 +59,7 @@ macro_rules! input {
 const WARMUP: u32 = 100;
 const BENCHES: u32 = 1000;
 
-pub fn run_with_input<const DAY: u32, S: Solution<DAY> + Default>(
-    solution: &mut S,
-    input: &str,
-) -> RunResult {
+pub fn run_with_input<const DAY: u32, S: Solution<DAY> + Default>(solution: &mut S, input: &str) -> RunResult {
     for _ in 0..WARMUP {
         *solution = S::default();
         solution.parse(input);
@@ -83,6 +81,7 @@ pub fn run_with_input<const DAY: u32, S: Solution<DAY> + Default>(
     let mut p1_min = u128::MAX;
     let mut p1_result = String::new();
     for _ in 0..BENCHES {
+        solution.prebench();
         let start = Instant::now();
         p1_result = solution.p1();
         p1_min = p1_min.min(start.elapsed().as_nanos());
@@ -92,6 +91,7 @@ pub fn run_with_input<const DAY: u32, S: Solution<DAY> + Default>(
     let mut p2_min = u128::MAX;
     let mut p2_result = String::new();
     for _ in 0..BENCHES {
+        solution.prebench();
         let start = Instant::now();
         p2_result = solution.p2();
         p2_min = p2_min.min(start.elapsed().as_nanos());
