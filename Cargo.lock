@@ -13,6 +13,7 @@ dependencies = [
  "num-complex",
  "prettytable-rs",
  "rayon",
+ "serde_json",
 ]
 
 [[package]]
