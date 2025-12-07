@@ -2,7 +2,7 @@
 
 use advent_of_code::days::{
     d1::SecretEntrance, d2::GiftShop, d3::Lobby, d4::PrintingDepartment, d5::Cafeteria,
-    d6::TrashCompactor,
+    d6::TrashCompactor, d7::Laboratories
 };
 
 use advent_of_code::input;
@@ -33,6 +33,7 @@ fn main() {
         4 => run_day::<4, PrintingDepartment>(input!(4)),
         5 => run_day::<5, Cafeteria>(input!(5)),
         6 => run_day::<6, TrashCompactor>(input!(6)),
+        7 => run_day::<7, Laboratories>(input!(7)),
         _ => eprintln!("day {} unimplemented", day),
     }
 }

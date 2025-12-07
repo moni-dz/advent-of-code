@@ -4,15 +4,15 @@ use crate::runner::Solution;
 
 #[derive(Default)]
 pub struct Laboratories {
-    grid: Vec<u8>,
-    dimensions: (usize, usize),
+    lines: Vec<Vec<u8>>,
     start: usize,
     beams: RefCell<Option<Vec<u64>>>,
 }
 
 impl Laboratories {
     fn simulate(&self) -> u64 {
-        let (width, height) = self.dimensions;
+        let width = self.lines.first().map(|line| line.len()).unwrap_or(0);
+        let height = self.lines.len();
         let mut beams = vec![0u64; width];
         let mut splits = 0;
 
@@ -26,7 +26,7 @@ impl Laboratories {
             );
 
             for col in min_col..max_col {
-                if beams[col] > 0 && self.grid[row * self.dimensions.0 + col] == b'^' {
+                if beams[col] > 0 && self.lines[row][col] == b'^' {
                     splits += 1;
                     beams[col - 1] += beams[col];
                     beams[col + 1] += beams[col];
@@ -45,15 +45,13 @@ impl Solution<7> for Laboratories {
         let lines: Vec<&str> = input
             .lines()
             .enumerate()
-            .filter(|(i, _)| *i == 0 || *i % 2 == 0)
+            .filter(|(i, _)| *i % 2 == 0)
             .map(|(_, line)| line)
             .collect();
 
         let width = lines.first().map(|line| line.len()).unwrap_or(0);
-        let height = lines.len();
 
-        self.dimensions = (width, height);
-        self.grid = lines.iter().flat_map(|line| line.bytes()).collect();
+        self.lines = lines.iter().map(|line| line.bytes().collect()).collect();
         self.start = width / 2;
     }
 
