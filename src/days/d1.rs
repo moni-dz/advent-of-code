@@ -13,16 +13,9 @@ impl Command {
     }
 }
 
+#[derive(Default)]
 pub struct SecretEntrance {
     commands: ArrayVec<Command, 4096>,
-}
-
-impl Default for SecretEntrance {
-    fn default() -> Self {
-        Self {
-            commands: ArrayVec::new(),
-        }
-    }
 }
 
 impl Solution<1> for SecretEntrance {
