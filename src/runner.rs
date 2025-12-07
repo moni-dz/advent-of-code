@@ -83,9 +83,8 @@ pub fn run_with_input<const DAY: u32, S: Solution<DAY> + Default>(solution: &mut
     for _ in 0..BENCHES {
         solution.prebench();
         let start = Instant::now();
-        p1_result = solution.p1();
+        p1_result = std::hint::black_box(solution.p1());
         p1_min = p1_min.min(start.elapsed().as_nanos());
-        std::hint::black_box(&p1_result);
     }
 
     let mut p2_min = u128::MAX;
@@ -93,9 +92,8 @@ pub fn run_with_input<const DAY: u32, S: Solution<DAY> + Default>(solution: &mut
     for _ in 0..BENCHES {
         solution.prebench();
         let start = Instant::now();
-        p2_result = solution.p2();
+        p2_result = std::hint::black_box(solution.p2());
         p2_min = p2_min.min(start.elapsed().as_nanos());
-        std::hint::black_box(&p2_result);
     }
 
     RunResult {

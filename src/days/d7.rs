@@ -1,133 +1,62 @@
-use crate::runner::Solution;
-use std::collections::VecDeque;
-use memchr::memchr;
+use std::cell::RefCell;
 
+use crate::runner::Solution;
+
+#[derive(Default)]
 pub struct Laboratories {
     grid: Vec<u8>,
     dimensions: (usize, usize),
-    start: (usize, usize),
-    memo: Vec<usize>,
-}
-
-impl Default for Laboratories {
-    fn default() -> Self {
-        Self {
-            grid: Vec::new(),
-            dimensions: (0, 0),
-            start: (0, 0),
-            memo: Vec::new(),
-        }
-    }
+    start: usize,
+    beams: RefCell<Option<Vec<u64>>>,
 }
 
 impl Laboratories {
-    #[inline]
-    fn idx(&self, row: usize, col: usize) -> usize {
-        row * self.dimensions.0 + col
-    }
+    fn simulate(&self) -> u64 {
+        let (width, height) = self.dimensions;
+        let mut beams = vec![0u64; width];
+        let mut splits = 0;
 
-    #[inline]
-    fn get(&self, row: usize, col: usize) -> u8 {
-        self.grid[self.idx(row, col)]
+        beams[self.start] = 1;
+
+        for row in 1..height {
+            let step = row;
+            let (min_col, max_col) = (self.start.saturating_sub(step), (self.start + step + 1).min(width));
+
+            for col in min_col..max_col {
+                if beams[col] > 0 && self.grid[row * self.dimensions.0 + col] == b'^' {
+                    splits += 1;
+                    beams[col - 1] += beams[col];
+                    beams[col + 1] += beams[col];
+                    beams[col] = 0;
+                }
+            }
+        }
+
+        *self.beams.borrow_mut() = Some(beams.clone());
+        splits
     }
 }
 
 impl Solution<7> for Laboratories {
     fn parse(&mut self, input: &str) {
-        let lines: Vec<&str> = input.lines().collect();
+        let lines: Vec<&str> = input.lines().enumerate().filter(|(i, _)| *i == 0 || *i % 2 == 0).map(|(_, line)| line).collect();
         let width = lines.first().map(|line| line.len()).unwrap_or(0);
         let height = lines.len();
-    
         self.dimensions = (width, height);
         self.grid = lines.iter().flat_map(|line| line.bytes()).collect();
-        self.memo.resize(width * height, 0);
-
-        if let Some(idx) = memchr(b'S', &self.grid) {
-            self.start = (idx / width, idx % width);
-        }
+        self.start = width / 2;
     }
 
     fn p1(&self) -> String {
-        let (width, height) = self.dimensions;
-        let mut splits = 0;
-        let mut queue = VecDeque::new();
-        let mut visited_beams = vec![false; width * height];
-        let mut visited_splitters = vec![false; width * height];
-
-        queue.push_back(self.start);
-
-        while let Some((mut row, col)) = queue.pop_front() {
-            let beam_idx = self.idx(row, col);
-
-            if visited_beams[beam_idx] {
-                continue;
-            }
-
-            visited_beams[beam_idx] = true;
-
-            loop {
-                row += 1;
-
-                if row >= height {
-                    break;
-                }
-
-                match self.get(row, col) {
-                    b'S' | b'.' => continue,
-                    b'^' => {
-                        let split_idx = self.idx(row, col);
-
-                        if !visited_splitters[split_idx] {
-                            visited_splitters[split_idx] = true;
-                            splits += 1;
-                        }
-
-                        if col > 0 {
-                            queue.push_back((row, col - 1));
-                        }
-
-                        if col + 1 < width {
-                            queue.push_back((row, col + 1));
-                        }
-
-                        break;
-                    }
-                    _ => break,
-                }
-            }
-        }
-
-        splits.to_string()
+        self.simulate().to_string()
     }
 
     fn p2(&self) -> String {
-        let (width, height) = self.dimensions;
-        let mut memo = self.memo.clone();
-
-        for row in (0..height).rev() {
-            for col in 0..width {
-                memo[self.idx(row, col)] = if row == height - 1 {
-                    1
-                } else {
-                    let next_row = row + 1;
-                    if self.get(next_row, col) == b'^' {
-                        let left = if col > 0 { memo[self.idx(next_row, col - 1)] } else { 0 };
-                        let right = if col + 1 < width { memo[self.idx(next_row, col + 1)] } else { 0 };
-
-                        left + right
-                    } else {
-                        memo[self.idx(next_row, col)]
-                    }
-                };
-            }
+        if let Some(beams) = self.beams.borrow().as_ref() {
+            beams.iter().sum::<u64>().to_string()
+        } else {
+            self.simulate();
+            self.beams.borrow().as_ref().unwrap().iter().sum::<u64>().to_string()
         }
-
-        memo[self.idx(self.start.0, self.start.1)].to_string()
-    }
-
-    fn prebench(&mut self) {
-        let (height, width) = self.dimensions;
-        self.memo.clear();
-        self.memo.resize(width * height, 0);
     }
 }
