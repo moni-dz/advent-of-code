@@ -2,7 +2,10 @@
 
 use prettytable::{Table, format, row};
 
-use advent_of_code::days::{d1::SecretEntrance, d2::GiftShop, d3::Lobby, d4::PrintingDepartment, d5::Cafeteria, d6::TrashCompactor, d7::Laboratories};
+use advent_of_code::days::{
+    d1::SecretEntrance, d2::GiftShop, d3::Lobby, d4::PrintingDepartment, d5::Cafeteria,
+    d6::TrashCompactor, d7::Laboratories,
+};
 
 use advent_of_code::input;
 use advent_of_code::runner::run_with_input;

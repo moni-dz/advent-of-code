@@ -1,6 +1,9 @@
 #![feature(portable_simd)]
 
-use advent_of_code::days::{d1::SecretEntrance, d2::GiftShop, d3::Lobby, d4::PrintingDepartment, d5::Cafeteria, d6::TrashCompactor};
+use advent_of_code::days::{
+    d1::SecretEntrance, d2::GiftShop, d3::Lobby, d4::PrintingDepartment, d5::Cafeteria,
+    d6::TrashCompactor,
+};
 
 use advent_of_code::input;
 use advent_of_code::runner::Solution;
@@ -17,7 +20,11 @@ fn run_day<const DAY: u32, S: Solution<DAY> + Default>(input: &str) {
 }
 
 fn main() {
-    let day: u32 = std::env::args().nth(1).expect("profile <day>").parse().expect("day is not a number");
+    let day: u32 = std::env::args()
+        .nth(1)
+        .expect("profile <day>")
+        .parse()
+        .expect("day is not a number");
 
     match day {
         1 => run_day::<1, SecretEntrance>(input!(1)),

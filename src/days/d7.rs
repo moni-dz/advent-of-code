@@ -20,7 +20,10 @@ impl Laboratories {
 
         for row in 1..height {
             let step = row;
-            let (min_col, max_col) = (self.start.saturating_sub(step), (self.start + step + 1).min(width));
+            let (min_col, max_col) = (
+                self.start.saturating_sub(step),
+                (self.start + step + 1).min(width),
+            );
 
             for col in min_col..max_col {
                 if beams[col] > 0 && self.grid[row * self.dimensions.0 + col] == b'^' {
@@ -39,9 +42,16 @@ impl Laboratories {
 
 impl Solution<7> for Laboratories {
     fn parse(&mut self, input: &str) {
-        let lines: Vec<&str> = input.lines().enumerate().filter(|(i, _)| *i == 0 || *i % 2 == 0).map(|(_, line)| line).collect();
+        let lines: Vec<&str> = input
+            .lines()
+            .enumerate()
+            .filter(|(i, _)| *i == 0 || *i % 2 == 0)
+            .map(|(_, line)| line)
+            .collect();
+
         let width = lines.first().map(|line| line.len()).unwrap_or(0);
         let height = lines.len();
+
         self.dimensions = (width, height);
         self.grid = lines.iter().flat_map(|line| line.bytes()).collect();
         self.start = width / 2;
@@ -56,7 +66,14 @@ impl Solution<7> for Laboratories {
             beams.iter().sum::<u64>().to_string()
         } else {
             self.simulate();
-            self.beams.borrow().as_ref().unwrap().iter().sum::<u64>().to_string()
+
+            self.beams
+                .borrow()
+                .as_ref()
+                .unwrap()
+                .iter()
+                .sum::<u64>()
+                .to_string()
         }
     }
 }

@@ -7,7 +7,8 @@ use std::simd::u8x64;
 macro_rules! chunk_max {
     ($bytes:expr, $j:expr, $end:expr, $size:expr, $simd_type:ty, $max_char:expr, $max_pos:expr) => {
         while $j + $size <= $end {
-            let chunk: $simd_type = Simd::from_slice(unsafe { $bytes.get_unchecked($j..$j + $size) });
+            let chunk: $simd_type =
+                Simd::from_slice(unsafe { $bytes.get_unchecked($j..$j + $size) });
             let chunk_max = chunk.reduce_max();
 
             if chunk_max > $max_char {
@@ -71,7 +72,8 @@ fn max_joltage<const N: usize>(bytes: &[u8]) -> u64 {
         let (first, first_pos) = find_max_digit!(bytes, len, 0, len - 2);
 
         let second = {
-            let (max_digit, _) = find_max_digit!(bytes, len - first_pos - 1, first_pos + 1, len - 1);
+            let (max_digit, _) =
+                find_max_digit!(bytes, len - first_pos - 1, first_pos + 1, len - 1);
             max_digit
         };
 
@@ -99,16 +101,31 @@ impl Solution<3> for Lobby {
     fn parse(&mut self, input: &str) {
         let bytes = input.as_bytes();
 
-        self.width = bytes.iter().position(|&b| b == b'\n' || b == b'\r').unwrap_or(bytes.len());
+        self.width = bytes
+            .iter()
+            .position(|&b| b == b'\n' || b == b'\r')
+            .unwrap_or(bytes.len());
 
-        self.data = bytes.iter().filter(|&&b| b != b'\n' && b != b'\r').copied().collect();
+        self.data = bytes
+            .iter()
+            .filter(|&&b| b != b'\n' && b != b'\r')
+            .copied()
+            .collect();
     }
 
     fn p1(&self) -> String {
-        self.data.chunks_exact(self.width).map(max_joltage::<2>).sum::<u64>().to_string()
+        self.data
+            .chunks_exact(self.width)
+            .map(max_joltage::<2>)
+            .sum::<u64>()
+            .to_string()
     }
 
     fn p2(&self) -> String {
-        self.data.chunks_exact(self.width).map(max_joltage::<12>).sum::<u64>().to_string()
+        self.data
+            .chunks_exact(self.width)
+            .map(max_joltage::<12>)
+            .sum::<u64>()
+            .to_string()
     }
 }

@@ -94,7 +94,9 @@ impl Solution<6> for TrashCompactor {
             let mut pos = 0;
 
             while pos < bytes.len() {
-                let next_op = memchr::memchr2(b'+', b'*', &bytes[pos..]).map(|i| pos + i).unwrap_or(bytes.len());
+                let next_op = memchr::memchr2(b'+', b'*', &bytes[pos..])
+                    .map(|i| pos + i)
+                    .unwrap_or(bytes.len());
 
                 for j in pos..next_op {
                     if column_numbers.len() <= j {
@@ -110,7 +112,11 @@ impl Solution<6> for TrashCompactor {
                 if next_op < bytes.len() {
                     let op = bytes[next_op];
 
-                    let values = column_numbers[next_op..].iter().take_while(|&&v| v != 0).copied().collect::<Vec<_>>();
+                    let values = column_numbers[next_op..]
+                        .iter()
+                        .take_while(|&&v| v != 0)
+                        .copied()
+                        .collect::<Vec<_>>();
 
                     match op {
                         b'+' => result += v_reduce!(values, 0, +, reduce_sum),

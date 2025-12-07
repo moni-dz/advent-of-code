@@ -59,7 +59,10 @@ macro_rules! input {
 const WARMUP: u32 = 100;
 const BENCHES: u32 = 1000;
 
-pub fn run_with_input<const DAY: u32, S: Solution<DAY> + Default>(solution: &mut S, input: &str) -> RunResult {
+pub fn run_with_input<const DAY: u32, S: Solution<DAY> + Default>(
+    solution: &mut S,
+    input: &str,
+) -> RunResult {
     for _ in 0..WARMUP {
         *solution = S::default();
         solution.parse(input);

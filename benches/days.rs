@@ -53,5 +53,7 @@ bench!(bench_d5, "d5", 5, d5::Cafeteria);
 bench!(bench_d6, "d6", 6, d6::TrashCompactor);
 bench!(bench_d7, "d7", 7, d7::Laboratories);
 
-criterion_group!(benches, bench_d1, bench_d2, bench_d3, bench_d4, bench_d5, bench_d6, bench_d7);
+criterion_group!(
+    benches, bench_d1, bench_d2, bench_d3, bench_d4, bench_d5, bench_d6, bench_d7
+);
 criterion_main!(benches);

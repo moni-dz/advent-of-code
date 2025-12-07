@@ -19,7 +19,9 @@ pub struct SecretEntrance {
 
 impl Default for SecretEntrance {
     fn default() -> Self {
-        Self { commands: ArrayVec::new() }
+        Self {
+            commands: ArrayVec::new(),
+        }
     }
 }
 
@@ -39,7 +41,10 @@ impl Solution<1> for SecretEntrance {
                 i += 1;
             }
 
-            self.commands.push(Command { distance, direction });
+            self.commands.push(Command {
+                distance,
+                direction,
+            });
 
             while i < bytes.len() && (bytes[i] == b'\n' || bytes[i] == b'\r') {
                 i += 1;
@@ -62,7 +67,11 @@ impl Solution<1> for SecretEntrance {
         self.commands
             .iter()
             .fold((50i32, 0i32), |(pos, clicks), cmd| {
-                let translated_pos = if cmd.direction == 1 { pos } else { (100 - pos) % 100 };
+                let translated_pos = if cmd.direction == 1 {
+                    pos
+                } else {
+                    (100 - pos) % 100
+                };
 
                 let new_clicks = if translated_pos == 0 {
                     clicks + cmd.distance / 100

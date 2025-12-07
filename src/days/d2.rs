@@ -15,7 +15,11 @@ fn count_digits(num: u64) -> u32 {
 #[inline]
 fn get_prefix(num: u64, p_len: u32) -> u64 {
     let digits = count_digits(num);
-    if p_len >= digits { num } else { num / 10u64.pow(digits - p_len) }
+    if p_len >= digits {
+        num
+    } else {
+        num / 10u64.pow(digits - p_len)
+    }
 }
 
 fn repeat_pattern(pattern: u64, pattern_len: u32, target_len: u32) -> u64 {
@@ -42,8 +46,16 @@ fn invalids_for_range<const PART: u8>((range_b, range_e): Interval) -> u64 {
             continue;
         }
 
-        let sub_b = if len == len_b { range_b } else { 10u64.pow(len - 1) };
-        let sub_e = if len == len_e { range_e } else { 10u64.pow(len) - 1 };
+        let sub_b = if len == len_b {
+            range_b
+        } else {
+            10u64.pow(len - 1)
+        };
+        let sub_e = if len == len_e {
+            range_e
+        } else {
+            10u64.pow(len) - 1
+        };
 
         if PART == 1 {
             let half_len = len / 2;
@@ -88,14 +100,25 @@ fn get_interval(s: &str) -> Option<Interval> {
 
 impl Solution<2> for GiftShop {
     fn parse(&mut self, input: &str) {
-        self.ranges = input.split(',').filter_map(|s| get_interval(s.trim())).collect();
+        self.ranges = input
+            .split(',')
+            .filter_map(|s| get_interval(s.trim()))
+            .collect();
     }
 
     fn p1(&self) -> String {
-        self.ranges.iter().map(|&r| invalids_for_range::<1>(r)).sum::<u64>().to_string()
+        self.ranges
+            .iter()
+            .map(|&r| invalids_for_range::<1>(r))
+            .sum::<u64>()
+            .to_string()
     }
 
     fn p2(&self) -> String {
-        self.ranges.iter().map(|&r| invalids_for_range::<2>(r)).sum::<u64>().to_string()
+        self.ranges
+            .iter()
+            .map(|&r| invalids_for_range::<2>(r))
+            .sum::<u64>()
+            .to_string()
     }
 }
