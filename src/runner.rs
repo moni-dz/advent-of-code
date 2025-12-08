@@ -56,8 +56,8 @@ macro_rules! input {
     };
 }
 
-const WARMUP: u32 = 100;
-const BENCHES: u32 = 1000;
+const WARMUP: u32 = 5;
+const BENCHES: u32 = 10;
 
 pub fn run_with_input<const DAY: u32, S: Solution<DAY> + Default>(
     solution: &mut S,
