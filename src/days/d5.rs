@@ -8,7 +8,11 @@ pub struct Cafeteria {
 
 impl Solution<5> for Cafeteria {
     fn parse(&mut self, input: &str) {
+        #[cfg(not(target_os = "windows"))]
         let (ranges_str, ids_str) = input.split_once("\n\n").unwrap();
+
+        #[cfg(target_os = "windows")]
+        let (ranges_str, ids_str) = input.split_once("\r\n\r\n").unwrap();
 
         self.ids = ids_str
             .lines()
