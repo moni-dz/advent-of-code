@@ -3,3 +3,4 @@
 flamegraph.svg
 cargo-flamegraph.trace
 profile.json.gz
+*.txt
