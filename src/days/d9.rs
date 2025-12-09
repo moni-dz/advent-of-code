@@ -1,13 +1,63 @@
 use crate::runner::Solution;
 use glam::IVec2;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 #[derive(Default)]
 pub struct MovieTheater {
     tiles: Vec<IVec2>,
+    vertical_edges: HashMap<i32, Vec<(i32, i32)>>,
+    horizontal_edges: HashMap<i32, Vec<(i32, i32)>>,
 }
 
 impl MovieTheater {
+    fn is_bounded(&self, p: IVec2) -> bool {
+        if let Some(ranges) = self.vertical_edges.get(&p.x) {
+            for &(min_y, max_y) in ranges {
+                if p.y >= min_y && p.y <= max_y {
+                    return true;
+                }
+            }
+        }
+
+        if let Some(ranges) = self.horizontal_edges.get(&p.y) {
+            for &(min_x, max_x) in ranges {
+                if p.x >= min_x && p.x <= max_x {
+                    return true;
+                }
+            }
+        }
+
+        false
+    }
+
+    fn build_edge_maps(&mut self) {
+        self.vertical_edges.clear();
+        self.horizontal_edges.clear();
+
+        for i in 0..self.tiles.len() {
+            let p1 = self.tiles[i];
+            let p2 = self.tiles[(i + 1) % self.tiles.len()];
+
+            if p1.x == p2.x {
+                let min_y = p1.y.min(p2.y);
+                let max_y = p1.y.max(p2.y);
+
+                self.vertical_edges
+                    .entry(p1.x)
+                    .or_insert_with(Vec::new)
+                    .push((min_y, max_y));
+            } else {
+                let min_x = p1.x.min(p2.x);
+                let max_x = p1.x.max(p2.x);
+
+                self.horizontal_edges
+                    .entry(p1.y)
+                    .or_insert_with(Vec::new)
+                    .push((min_x, max_x));
+            }
+        }
+    }
+
     fn inside_rect(&self, p: IVec2) -> bool {
         let mut inside = false;
         let mut prev = self.tiles[self.tiles.len() - 1];
@@ -32,17 +82,12 @@ impl MovieTheater {
         inside
     }
 
-    fn is_point_valid(
-        &self,
-        p: IVec2,
-        boundary: &HashSet<IVec2>,
-        point_cache: &mut HashMap<IVec2, bool>,
-    ) -> bool {
+    fn is_point_valid(&self, p: IVec2, point_cache: &mut HashMap<IVec2, bool>) -> bool {
         if let Some(&result) = point_cache.get(&p) {
             return result;
         }
 
-        let result = boundary.contains(&p) || self.inside_rect(p);
+        let result = self.is_bounded(p) || self.inside_rect(p);
         point_cache.insert(p, result);
         result
     }
@@ -53,11 +98,18 @@ impl MovieTheater {
         p2: IVec2,
         xs: &[i32],
         ys: &[i32],
-        boundary: &HashSet<IVec2>,
         point_cache: &mut HashMap<IVec2, bool>,
     ) -> bool {
         let min = p1.min(p2);
         let max = p1.max(p2);
+
+        if !self.is_point_valid(IVec2::new(min.x, min.y), point_cache)
+            || !self.is_point_valid(IVec2::new(max.x, min.y), point_cache)
+            || !self.is_point_valid(IVec2::new(min.x, max.y), point_cache)
+            || !self.is_point_valid(IVec2::new(max.x, max.y), point_cache)
+        {
+            return false;
+        }
 
         let width = max.x - min.x;
         let height = max.y - min.y;
@@ -65,8 +117,8 @@ impl MovieTheater {
         if width <= height {
             for &x in xs {
                 if (min.x..=max.x).contains(&x) {
-                    if !self.is_point_valid(IVec2::new(x, min.y), boundary, point_cache)
-                        || !self.is_point_valid(IVec2::new(x, max.y), boundary, point_cache)
+                    if !self.is_point_valid(IVec2::new(x, min.y), point_cache)
+                        || !self.is_point_valid(IVec2::new(x, max.y), point_cache)
                     {
                         return false;
                     }
@@ -75,8 +127,8 @@ impl MovieTheater {
 
             for &y in ys {
                 if (min.y..=max.y).contains(&y) {
-                    if !self.is_point_valid(IVec2::new(min.x, y), boundary, point_cache)
-                        || !self.is_point_valid(IVec2::new(max.x, y), boundary, point_cache)
+                    if !self.is_point_valid(IVec2::new(min.x, y), point_cache)
+                        || !self.is_point_valid(IVec2::new(max.x, y), point_cache)
                     {
                         return false;
                     }
@@ -85,8 +137,8 @@ impl MovieTheater {
         } else {
             for &y in ys {
                 if (min.y..=max.y).contains(&y) {
-                    if !self.is_point_valid(IVec2::new(min.x, y), boundary, point_cache)
-                        || !self.is_point_valid(IVec2::new(max.x, y), boundary, point_cache)
+                    if !self.is_point_valid(IVec2::new(min.x, y), point_cache)
+                        || !self.is_point_valid(IVec2::new(max.x, y), point_cache)
                     {
                         return false;
                     }
@@ -95,8 +147,8 @@ impl MovieTheater {
 
             for &x in xs {
                 if (min.x..=max.x).contains(&x) {
-                    if !self.is_point_valid(IVec2::new(x, min.y), boundary, point_cache)
-                        || !self.is_point_valid(IVec2::new(x, max.y), boundary, point_cache)
+                    if !self.is_point_valid(IVec2::new(x, min.y), point_cache)
+                        || !self.is_point_valid(IVec2::new(x, max.y), point_cache)
                     {
                         return false;
                     }
@@ -106,25 +158,6 @@ impl MovieTheater {
 
         true
     }
-
-    fn build_boundary(&self, boundary: &mut HashSet<IVec2>) {
-        boundary.clear();
-
-        for i in 0..self.tiles.len() {
-            let p1 = self.tiles[i];
-            let p2 = self.tiles[(i + 1) % self.tiles.len()];
-
-            if p1.x == p2.x {
-                for y in p1.y.min(p2.y)..=p1.y.max(p2.y) {
-                    boundary.insert(IVec2::new(p1.x, y));
-                }
-            } else {
-                for x in p1.x.min(p2.x)..=p1.x.max(p2.x) {
-                    boundary.insert(IVec2::new(x, p1.y));
-                }
-            }
-        }
-    }
 }
 
 impl Solution<9> for MovieTheater {
@@ -133,22 +166,22 @@ impl Solution<9> for MovieTheater {
             .lines()
             .filter_map(|line| {
                 let mut parts = line.split(',');
+
                 let x = parts.next()?.trim().parse::<i32>().ok()?;
                 let y = parts.next()?.trim().parse::<i32>().ok()?;
+
                 Some(IVec2::new(x, y))
             })
             .collect();
+        self.build_edge_maps();
     }
 
     fn p1(&self) -> String {
         (0..self.tiles.len())
             .flat_map(|i| {
                 (i + 1..self.tiles.len()).map(move |j| {
-                    let p1 = self.tiles[i];
-                    let p2 = self.tiles[j];
-                    let delta = (p2 - p1).abs();
-                    let area = (((delta.x) + 1) as i64) * (((delta.y) + 1) as i64);
-                    area
+                    let delta = (self.tiles[j] - self.tiles[i]).abs();
+                    (delta.x + 1) as i64 * (delta.y + 1) as i64
                 })
             })
             .max()
@@ -165,27 +198,26 @@ impl Solution<9> for MovieTheater {
         ys.sort_unstable();
         ys.dedup();
 
-        let mut boundary = HashSet::new();
-        self.build_boundary(&mut boundary);
-
-        let mut point_cache = HashMap::new();
-
         let mut candidates: Vec<(i64, IVec2, IVec2)> = (0..self.tiles.len())
             .flat_map(|i| {
                 (i + 1..self.tiles.len()).map(move |j| {
-                    let p1 = self.tiles[i];
-                    let p2 = self.tiles[j];
-                    let delta = (p2 - p1).abs();
+                    let delta = (self.tiles[j] - self.tiles[i]).abs();
                     let area = (((delta.x) + 1) as i64) * (((delta.y) + 1) as i64);
-                    (area, p1, p2)
+                    (area, self.tiles[i], self.tiles[j])
                 })
+            })
+            .filter(|&(_, p1, p2)| {
+                let delta = (p2 - p1).abs();
+                delta.x > 0 && delta.y > 0
             })
             .collect();
 
         candidates.sort_unstable_by_key(|&(area, _, _)| std::cmp::Reverse(area));
 
+        let mut point_cache = HashMap::new();
+
         for (area, p1, p2) in candidates {
-            if self.is_rectilinear(p1, p2, &xs, &ys, &boundary, &mut point_cache) {
+            if self.is_rectilinear(p1, p2, &xs, &ys, &mut point_cache) {
                 return area.to_string();
             }
         }
