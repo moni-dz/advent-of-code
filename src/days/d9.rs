@@ -1,100 +1,105 @@
 use crate::runner::Solution;
-use std::cell::RefCell;
+use glam::IVec2;
 use std::collections::{HashMap, HashSet};
 
 #[derive(Default)]
 pub struct MovieTheater {
-    tiles: Vec<(i32, i32)>,
-    boundary: HashSet<(i32, i32)>,
-    xs: Vec<i32>,
-    ys: Vec<i32>,
-    point_cache: RefCell<HashMap<(i32, i32), bool>>,
+    tiles: Vec<IVec2>,
 }
 
 impl MovieTheater {
-    fn inside_rect(&self, px: i32, py: i32) -> bool {
+    fn inside_rect(&self, p: IVec2) -> bool {
         let mut inside = false;
+        let mut prev = self.tiles[self.tiles.len() - 1];
 
-        let mut x1 = self.tiles[self.tiles.len() - 1].0;
-        let mut y1 = self.tiles[self.tiles.len() - 1].1;
-
-        for (x2, y2) in &self.tiles {
-            if y1 == *y2 {
-                x1 = *x2;
-                y1 = *y2;
+        for curr in &self.tiles {
+            if prev.y == curr.y {
+                prev = *curr;
                 continue;
             }
 
-            let y_in_range = (y1 <= py && py < *y2) || (*y2 <= py && py < y1);
-            let x_intersects = px < (x2 - x1) * (py - y1) / (y2 - y1) + x1;
+            let y_in_range = (prev.y <= p.y && p.y < curr.y) || (curr.y <= p.y && p.y < prev.y);
+            let x_intersects =
+                p.x < (curr.x - prev.x) * (p.y - prev.y) / (curr.y - prev.y) + prev.x;
 
             if y_in_range && x_intersects {
                 inside = !inside;
             }
 
-            x1 = *x2;
-            y1 = *y2;
+            prev = *curr;
         }
 
         inside
     }
 
-    fn is_point_valid(&self, x: i32, y: i32) -> bool {
-        let p = (x, y);
-        let mut cache = self.point_cache.borrow_mut();
-
-        if let Some(&result) = cache.get(&p) {
+    fn is_point_valid(
+        &self,
+        p: IVec2,
+        boundary: &HashSet<IVec2>,
+        point_cache: &mut HashMap<IVec2, bool>,
+    ) -> bool {
+        if let Some(&result) = point_cache.get(&p) {
             return result;
         }
 
-        let result = self.boundary.contains(&p) || self.inside_rect(x, y);
-        cache.insert(p, result);
+        let result = boundary.contains(&p) || self.inside_rect(p);
+        point_cache.insert(p, result);
         result
     }
 
-    fn is_rectilinear(&self, x1: i32, y1: i32, x2: i32, y2: i32) -> bool {
-        let min_x = x1.min(x2);
-        let max_x = x1.max(x2);
-        let min_y = y1.min(y2);
-        let max_y = y1.max(y2);
+    fn is_rectilinear(
+        &self,
+        p1: IVec2,
+        p2: IVec2,
+        xs: &[i32],
+        ys: &[i32],
+        boundary: &HashSet<IVec2>,
+        point_cache: &mut HashMap<IVec2, bool>,
+    ) -> bool {
+        let min = p1.min(p2);
+        let max = p1.max(p2);
 
-        let width = max_x - min_x;
-        let height = max_y - min_y;
+        let width = max.x - min.x;
+        let height = max.y - min.y;
 
         if width <= height {
-            for &x in self.xs.iter() {
-                if x < min_x || x > max_x {
-                    continue;
-                }
-                if !self.is_point_valid(x, min_y) || !self.is_point_valid(x, max_y) {
-                    return false;
+            for &x in xs {
+                if (min.x..=max.x).contains(&x) {
+                    if !self.is_point_valid(IVec2::new(x, min.y), boundary, point_cache)
+                        || !self.is_point_valid(IVec2::new(x, max.y), boundary, point_cache)
+                    {
+                        return false;
+                    }
                 }
             }
 
-            for &y in self.ys.iter() {
-                if y < min_y || y > max_y {
-                    continue;
-                }
-                if !self.is_point_valid(min_x, y) || !self.is_point_valid(max_x, y) {
-                    return false;
+            for &y in ys {
+                if (min.y..=max.y).contains(&y) {
+                    if !self.is_point_valid(IVec2::new(min.x, y), boundary, point_cache)
+                        || !self.is_point_valid(IVec2::new(max.x, y), boundary, point_cache)
+                    {
+                        return false;
+                    }
                 }
             }
         } else {
-            for &y in self.ys.iter() {
-                if y < min_y || y > max_y {
-                    continue;
-                }
-                if !self.is_point_valid(min_x, y) || !self.is_point_valid(max_x, y) {
-                    return false;
+            for &y in ys {
+                if (min.y..=max.y).contains(&y) {
+                    if !self.is_point_valid(IVec2::new(min.x, y), boundary, point_cache)
+                        || !self.is_point_valid(IVec2::new(max.x, y), boundary, point_cache)
+                    {
+                        return false;
+                    }
                 }
             }
 
-            for &x in self.xs.iter() {
-                if x < min_x || x > max_x {
-                    continue;
-                }
-                if !self.is_point_valid(x, min_y) || !self.is_point_valid(x, max_y) {
-                    return false;
+            for &x in xs {
+                if (min.x..=max.x).contains(&x) {
+                    if !self.is_point_valid(IVec2::new(x, min.y), boundary, point_cache)
+                        || !self.is_point_valid(IVec2::new(x, max.y), boundary, point_cache)
+                    {
+                        return false;
+                    }
                 }
             }
         }
@@ -102,35 +107,23 @@ impl MovieTheater {
         true
     }
 
-    fn build_boundary(&mut self) {
-        self.boundary.clear();
-        self.xs.clear();
-        self.ys.clear();
+    fn build_boundary(&self, boundary: &mut HashSet<IVec2>) {
+        boundary.clear();
 
         for i in 0..self.tiles.len() {
-            let (x1, y1) = self.tiles[i];
-            let (x2, y2) = self.tiles[(i + 1) % self.tiles.len()];
+            let p1 = self.tiles[i];
+            let p2 = self.tiles[(i + 1) % self.tiles.len()];
 
-            self.xs.push(x1);
-            self.ys.push(y1);
-
-            if x1 == x2 {
-                let (min_y, max_y) = (y1.min(y2), y1.max(y2));
-                for y in min_y..=max_y {
-                    self.boundary.insert((x1, y));
+            if p1.x == p2.x {
+                for y in p1.y.min(p2.y)..=p1.y.max(p2.y) {
+                    boundary.insert(IVec2::new(p1.x, y));
                 }
             } else {
-                let (min_x, max_x) = (x1.min(x2), x1.max(x2));
-                for x in min_x..=max_x {
-                    self.boundary.insert((x, y1));
+                for x in p1.x.min(p2.x)..=p1.x.max(p2.x) {
+                    boundary.insert(IVec2::new(x, p1.y));
                 }
             }
         }
-
-        self.xs.sort_unstable();
-        self.xs.dedup();
-        self.ys.sort_unstable();
-        self.ys.dedup();
     }
 }
 
@@ -142,56 +135,61 @@ impl Solution<9> for MovieTheater {
                 let mut parts = line.split(',');
                 let x = parts.next()?.trim().parse::<i32>().ok()?;
                 let y = parts.next()?.trim().parse::<i32>().ok()?;
-                Some((x, y))
+                Some(IVec2::new(x, y))
             })
             .collect();
-
-        self.build_boundary();
     }
 
     fn p1(&self) -> String {
-        let mut max_area = 0i64;
-
-        for i in 0..self.tiles.len() {
-            for j in (i + 1)..self.tiles.len() {
-                let (x1, y1) = self.tiles[i];
-                let (x2, y2) = self.tiles[j];
-
-                let width = ((x1 - x2).abs() + 1) as i64;
-                let height = ((y1 - y2).abs() + 1) as i64;
-                let area = width * height;
-
-                max_area = max_area.max(area);
-            }
-        }
-
-        max_area.to_string()
+        (0..self.tiles.len())
+            .flat_map(|i| {
+                (i + 1..self.tiles.len()).map(move |j| {
+                    let p1 = self.tiles[i];
+                    let p2 = self.tiles[j];
+                    let delta = (p2 - p1).abs();
+                    let area = (((delta.x) + 1) as i64) * (((delta.y) + 1) as i64);
+                    area
+                })
+            })
+            .max()
+            .unwrap_or(0)
+            .to_string()
     }
 
     fn p2(&self) -> String {
-        let mut candidates: Vec<(i64, i32, i32, i32, i32)> = (0..self.tiles.len())
+        let mut xs: Vec<_> = self.tiles.iter().map(|p| p.x).collect();
+        let mut ys: Vec<_> = self.tiles.iter().map(|p| p.y).collect();
+
+        xs.sort_unstable();
+        xs.dedup();
+        ys.sort_unstable();
+        ys.dedup();
+
+        let mut boundary = HashSet::new();
+        self.build_boundary(&mut boundary);
+
+        let mut point_cache = HashMap::new();
+
+        let mut candidates: Vec<(i64, IVec2, IVec2)> = (0..self.tiles.len())
             .flat_map(|i| {
                 (i + 1..self.tiles.len()).map(move |j| {
-                    let (x1, y1) = self.tiles[i];
-                    let (x2, y2) = self.tiles[j];
-                    let area = (((x1 - x2).abs() + 1) as i64) * (((y1 - y2).abs() + 1) as i64);
-                    (area, x1, y1, x2, y2)
+                    let p1 = self.tiles[i];
+                    let p2 = self.tiles[j];
+                    let delta = (p2 - p1).abs();
+                    let area = (((delta.x) + 1) as i64) * (((delta.y) + 1) as i64);
+                    (area, p1, p2)
                 })
             })
             .collect();
 
-        candidates.sort_unstable_by(|a, b| b.0.cmp(&a.0));
+        candidates.sort_unstable_by_key(|&(area, _, _)| std::cmp::Reverse(area));
 
-        for (area, x1, y1, x2, y2) in candidates {
-            if self.is_rectilinear(x1, y1, x2, y2) {
+        for (area, p1, p2) in candidates {
+            if self.is_rectilinear(p1, p2, &xs, &ys, &boundary, &mut point_cache) {
                 return area.to_string();
             }
         }
 
         "0".to_string()
-    }
-
-    fn prebench(&mut self) {
-        self.point_cache.borrow_mut().clear();
     }
 }

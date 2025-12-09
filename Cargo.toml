@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 arrayvec = "0.7"
+glam = "0.29"
 kiddo = "5.2.2"
 memchr = "2.7"
 mimalloc = "0.1"

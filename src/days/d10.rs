@@ -4,9 +4,7 @@ use crate::runner::Solution;
 pub struct TBD;
 
 impl Solution<10> for TBD {
-    fn parse(&mut self, input: &str) {
-        
-    }
+    fn parse(&mut self, input: &str) {}
 
     fn p1(&self) -> String {
         String::new()
