@@ -7,6 +7,7 @@ use std::env;
 use advent_of_code::days::{
     d1::SecretEntrance, d2::GiftShop, d3::Lobby, d4::PrintingDepartment, d5::Cafeteria,
     d6::TrashCompactor, d7::Laboratories, d8::Playground, d9::MovieTheater, d10::Factory,
+    d11::Reactor,
 };
 
 use advent_of_code::input;
@@ -39,6 +40,7 @@ fn main() {
         run!(Playground, 8),
         run!(MovieTheater, 9),
         run!(Factory, 10),
+        run!(Reactor, 11),
     ];
 
     results.sort_by_key(|r| r.day);

@@ -1,4 +1,4 @@
-use advent_of_code::days::{d1, d2, d3, d4, d5, d6, d7, d8, d9};
+use advent_of_code::days::{d1, d2, d3, d4, d5, d6, d7, d8, d9, d10, d11};
 use advent_of_code::input;
 use advent_of_code::runner::Solution;
 use criterion::{Criterion, black_box, criterion_group, criterion_main};
@@ -54,9 +54,11 @@ bench!(bench_d6, "d6", 6, d6::TrashCompactor);
 bench!(bench_d7, "d7", 7, d7::Laboratories);
 bench!(bench_d8, "d8", 8, d8::Playground);
 bench!(bench_d9, "d9", 9, d9::MovieTheater);
+bench!(bench_d10, "d10", 10, d10::Factory);
+bench!(bench_d11, "d11", 11, d11::Reactor);
 
 criterion_group!(
     benches, bench_d1, bench_d2, bench_d3, bench_d4, bench_d5, bench_d6, bench_d7, bench_d8,
-    bench_d9
+    bench_d9, bench_d10, bench_d11
 );
 criterion_main!(benches);
